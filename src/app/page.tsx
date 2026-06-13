@@ -1,65 +1,205 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { CampusOSLogo } from "@/components/SideNavBar";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [commanderId, setCommanderId] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commanderId || !accessCode) {
+      setError("Please fill in all credential fields.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+
+    // Simulate futuristic validation delay
+    setTimeout(() => {
+      setLoading(false);
+      router.push("/dashboard");
+    }, 1200);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Left Side: Animated Brand Experience */}
+      <section className="hidden md:flex relative w-1/2 h-full flex-col justify-center items-center px-12 bg-surface-dim overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-secondary/15"></div>
+          {/* Neon blobs */}
+          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary-container/10 blur-[130px] rounded-full animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-secondary-container/10 blur-[130px] rounded-full animate-pulse [animation-delay:1s]"></div>
+          {/* Tech Grid overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
+          ></div>
+        </div>
+
+        {/* Content Overlay */}
+        <div className="relative z-10 flex flex-col items-start max-w-lg">
+          <div className="mb-12 flex items-center gap-4">
+            <CampusOSLogo className="w-20 h-20" />
+            <div>
+              <span className="font-geist font-black text-[38px] tracking-tight bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text leading-none block">
+                CAMPUSOS
+              </span>
+              <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest leading-none block mt-1">
+                Student Command System
+              </span>
+            </div>
+          </div>
+          <h2 className="font-geist text-[40px] font-bold text-on-surface tracking-tight leading-[1.1] mb-6">
+            The next generation of academic management.
+          </h2>
+          <p className="text-on-surface-variant font-body-lg text-base leading-relaxed mb-8">
+            An engineered dashboard balancing technical efficiency with gamified feedback loops.
+            Position your campus experience as a unified command center.
           </p>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
+                SYSTEM CORRELATION
+              </span>
+              <span className="font-geist text-lg font-bold text-on-surface">Optimal</span>
+            </div>
+            <div className="h-8 w-[1px] bg-outline-variant"></div>
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] text-secondary uppercase tracking-widest">
+                ACTIVE COMMANDERS
+              </span>
+              <span className="font-geist text-lg font-bold text-on-surface">1,432 Online</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Right Side: Glassmorphic Login Panel */}
+      <section className="w-full md:w-1/2 h-full flex flex-col justify-center items-center px-6 sm:px-16 bg-background relative">
+        {/* Subtle decorative lights */}
+        <div className="absolute top-1/4 right-10 w-48 h-48 bg-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 left-10 w-48 h-48 bg-secondary/5 rounded-full blur-[80px] pointer-events-none"></div>
+
+        <div className="w-full max-w-[420px] relative z-10">
+          <div className="md:hidden flex items-center gap-3 mb-8 justify-center">
+            <CampusOSLogo className="w-12 h-12" />
+            <div>
+              <span className="font-geist font-black text-2xl tracking-tight bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text">
+                CAMPUSOS
+              </span>
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">
+                Student Command System
+              </p>
+            </div>
+          </div>
+
+          <div className="glass-card p-8 rounded-2xl relative overflow-hidden">
+            {/* Shimmer overlay effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.01] via-transparent to-white/[0.02] pointer-events-none"></div>
+
+            <div className="mb-8">
+              <h3 className="font-geist text-2xl font-bold text-on-surface tracking-tight">
+                Initialize Access
+              </h3>
+              <p className="text-on-surface-variant text-xs font-mono uppercase tracking-wider mt-1.5">
+                Authentication Required
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-6 p-3 rounded-lg bg-error-container/20 border border-error/30 text-error text-xs flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">error</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-1">
+                <label className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block">
+                  Commander ID
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-0 bottom-2.5 text-on-surface-variant text-[18px]">
+                    account_circle
+                  </span>
+                  <input
+                    type="text"
+                    value={commanderId}
+                    onChange={(e) => setCommanderId(e.target.value)}
+                    placeholder="e.g. sterling_42"
+                    className="w-full bg-transparent pl-8 pr-2 py-2 border-b border-outline-variant focus:border-primary text-on-surface font-sans text-sm focus:outline-none transition-all placeholder:text-outline/50"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block">
+                  Access Code
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-0 bottom-2.5 text-on-surface-variant text-[18px]">
+                    lock
+                  </span>
+                  <input
+                    type="password"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full bg-transparent pl-8 pr-2 py-2 border-b border-outline-variant focus:border-primary text-on-surface font-sans text-sm focus:outline-none transition-all placeholder:text-outline/50"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <label className="flex items-center gap-2 text-on-surface-variant cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="rounded bg-surface-container-high border-outline-variant text-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <span>Persist session</span>
+                </label>
+                <a href="#" className="text-primary hover:underline font-mono uppercase tracking-wider">
+                  Forgot credentials?
+                </a>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary-container font-mono text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 neon-glow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <span className="animate-spin h-3.5 w-3.5 border-2 border-on-primary-container border-t-transparent rounded-full"></span>
+                    <span>Verifying Code...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">vpn_key</span>
+                    <span>Verify Credentials</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-8 text-center text-xs text-on-surface-variant font-mono uppercase tracking-widest">
+            SECURE PORT: 443 // HOST: OS_CORE
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
