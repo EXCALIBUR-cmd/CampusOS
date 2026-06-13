@@ -2,7 +2,7 @@
 
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LeaderboardUser {
   rank: number;
@@ -17,25 +17,51 @@ export default function LeaderboardPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
-  const podium: LeaderboardUser[] = [
+  const [podium, setPodium] = useState<LeaderboardUser[]>([
     { rank: 1, name: "Ace_Pilot", xp: 98200, guild: "Alpha Squad", isUser: false, avatar: "A" },
     { rank: 2, name: "NovaCore", xp: 94100, guild: "Cyber Knights", isUser: false, avatar: "N" },
     { rank: 3, name: "Flux_Zero", xp: 92800, guild: "Beta Void", isUser: false, avatar: "F" },
-  ];
+  ]);
 
-  const players: LeaderboardUser[] = [
-    { rank: 4, name: "SkyNet_V2", xp: 88500, guild: "Cyber Knights", isUser: false, avatar: "S" },
-    { rank: 5, name: "CyberKnight", xp: 82400, guild: "Alpha Squad", isUser: false, avatar: "C" },
-    { rank: 6, name: "VoidRunner", xp: 79000, guild: "Beta Void", isUser: false, avatar: "V" },
-    { rank: 7, name: "GridPro", xp: 74200, guild: "Alpha Squad", isUser: false, avatar: "G" },
-    { rank: 8, name: "Helix_DNA", xp: 68100, guild: "Delta Bio", isUser: false, avatar: "H" },
-    { rank: 9, name: "Quantum_Q", xp: 61000, guild: "Beta Void", isUser: false, avatar: "Q" },
-    { rank: 10, name: "Neon_Ghost", xp: 54300, guild: "Alpha Squad", isUser: false, avatar: "N" },
-    { rank: 11, name: "Matrix_M", xp: 48900, guild: "Cyber Knights", isUser: false, avatar: "M" },
-    { rank: 12, name: "Commander Sterling", xp: 42500, guild: "Alpha Squad", isUser: true, avatar: "S" },
-    { rank: 13, name: "Sigma_Root", xp: 39100, guild: "Delta Bio", isUser: false, avatar: "S" },
-    { rank: 14, name: "Bit_Crusher", xp: 35000, guild: "Cyber Knights", isUser: false, avatar: "B" },
-  ];
+  const [players, setPlayers] = useState<LeaderboardUser[]>([]);
+
+  useEffect(() => {
+    async function loadLeaderboard() {
+      try {
+        const queryParams = new URLSearchParams();
+        if (category !== "all") {
+          queryParams.append("department", category);
+        }
+        const res = await fetch(`/api/leaderboard?${queryParams.toString()}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            const list: LeaderboardUser[] = json.data.map((r: any) => ({
+              rank: r.rank,
+              name: r.name,
+              xp: r.xp,
+              guild: r.department || "General",
+              isUser: r.isUser,
+              avatar: r.name ? r.name[0].toUpperCase() : "U",
+            }));
+
+            // Assign podium ranks
+            const p1 = list.find((p) => p.rank === 1) || { rank: 1, name: "Ace_Pilot", xp: 98200, guild: "Alpha Squad", isUser: false, avatar: "A" };
+            const p2 = list.find((p) => p.rank === 2) || { rank: 2, name: "NovaCore", xp: 94100, guild: "Cyber Knights", isUser: false, avatar: "N" };
+            const p3 = list.find((p) => p.rank === 3) || { rank: 3, name: "Flux_Zero", xp: 92800, guild: "Beta Void", isUser: false, avatar: "F" };
+            setPodium([p1, p2, p3]);
+
+            // Remaining players
+            const others = list.filter((p) => p.rank > 3);
+            setPlayers(others);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading leaderboard:", err);
+      }
+    }
+    loadLeaderboard();
+  }, [category]);
 
   // Filter & Search Logic
   const filteredPlayers = players.filter((player) => {

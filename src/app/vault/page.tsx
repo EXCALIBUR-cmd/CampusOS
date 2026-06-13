@@ -3,7 +3,7 @@
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
 import { XPProgress } from "@/components/XPProgress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Achievement {
   id: string;
@@ -18,74 +18,50 @@ interface Achievement {
 }
 
 export default function VaultPage() {
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [selectedBadge, setSelectedBadge] = useState<Achievement | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState({
+    level: 1,
+    totalXp: 0,
+    maxXp: 10000,
+    streak: 0,
+    completedCount: 0,
+    totalCount: 0,
+  });
 
-  const achievements: Achievement[] = [
-    {
-      id: "1",
-      name: "Code Warrior",
-      desc: "Successfully submit 10 programming assignments on time.",
-      xp: "+800 XP",
-      icon: "terminal",
-      unlocked: true,
-      date: "Oct 08, 2026",
-      category: "academic",
-      rarity: "common",
-    },
-    {
-      id: "2",
-      name: "Early Bird",
-      desc: "Check-in to lectures before start time 10 times consecutively.",
-      xp: "+600 XP",
-      icon: "alarm",
-      unlocked: true,
-      date: "Oct 09, 2026",
-      category: "participation",
-      rarity: "common",
-    },
-    {
-      id: "3",
-      name: "Perfect Presence",
-      desc: "Maintain 100% attendance in all enrolled courses for 30 days.",
-      xp: "+1,500 XP",
-      icon: "workspace_premium",
-      unlocked: true,
-      date: "Oct 11, 2026",
-      category: "participation",
-      rarity: "rare",
-    },
-    {
-      id: "4",
-      name: "Apex Scholar",
-      desc: "Achieve a semester CGPA rating of 3.8 or higher.",
-      xp: "+2,000 XP",
-      icon: "auto_stories",
-      unlocked: true,
-      date: "Sep 28, 2026",
-      category: "academic",
-      rarity: "legendary",
-    },
-    {
-      id: "5",
-      name: "Guild Hackathon MVP",
-      desc: "Secure 1st place in the semester Guild Coding Hackathon.",
-      xp: "+5,000 XP",
-      icon: "emoji_events",
-      unlocked: false,
-      category: "participation",
-      rarity: "legendary",
-    },
-    {
-      id: "6",
-      name: "Speed Demon",
-      desc: "Submit a mission within 2 hours of it being published.",
-      xp: "+1,000 XP",
-      icon: "bolt",
-      unlocked: false,
-      category: "speed",
-      rarity: "rare",
-    },
-  ];
+  useEffect(() => {
+    async function loadVault() {
+      try {
+        const res = await fetch("/api/vault");
+        const json = await res.json();
+        if (json.success && json.data) {
+          setAchievements(json.data.achievements);
+          
+          const currentLevel = json.data.level;
+          const currentXpInLevel = json.data.totalXp % 10000;
+          const maxXp = 10000;
+
+          setStats({
+            level: currentLevel,
+            totalXp: currentXpInLevel,
+            maxXp,
+            streak: json.data.streak,
+            completedCount: json.data.completedCount,
+            totalCount: json.data.totalCount,
+          });
+        } else {
+          setError(json.error || "Failed to load achievements data");
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to establish secure link to system core");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadVault();
+  }, []);
 
   const getRarityStyles = (rarity: "common" | "rare" | "legendary", unlocked: boolean) => {
     if (!unlocked) return "border-outline-variant/30 text-on-surface-variant/40 opacity-40";
@@ -98,6 +74,29 @@ export default function VaultPage() {
         return "border-tertiary text-tertiary";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex relative">
+        <SideNavBar />
+        <main className="flex-1 ml-64 p-8 flex flex-col items-center justify-center font-mono text-xs text-primary animate-pulse">
+          Retrieving Achievement Records...
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex relative">
+        <SideNavBar />
+        <main className="flex-1 ml-64 p-8 flex flex-col items-center justify-center font-mono text-xs text-error">
+          <span className="material-symbols-outlined text-4xl mb-2">error</span>
+          <span>{error}</span>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex relative">
@@ -118,7 +117,7 @@ export default function VaultPage() {
                 Accumulate XP by submitting assignments, checking in on time, and completing courses.
                 Level calibrations unlock exclusive privileges and ranks in the Global Hall of Fame.
               </p>
-              <XPProgress level={42} currentXp={42500} maxXp={50000} streak={15} />
+              <XPProgress level={stats.level} currentXp={stats.totalXp} maxXp={stats.maxXp} streak={stats.streak} />
             </div>
           </section>
 
@@ -130,7 +129,7 @@ export default function VaultPage() {
               </h3>
               <div className="flex gap-2">
                 <span className="font-mono text-[10px] text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded">
-                  4/6 Completed
+                  {stats.completedCount}/{stats.totalCount} Completed
                 </span>
               </div>
             </div>

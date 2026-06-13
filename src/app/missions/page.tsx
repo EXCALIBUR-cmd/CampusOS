@@ -2,7 +2,7 @@
 
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Assignment {
   id: string;
@@ -22,13 +22,41 @@ export default function MissionsPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [missions, setMissions] = useState<Assignment[]>([
-    { id: "1", code: "CS-401", name: "AI Ethics & Algorithmic Bias", due: "Oct 15, 2026", status: "pending", xp: "+450 XP" },
-    { id: "2", code: "CS-402", name: "Relational Algebra Query Design", due: "Oct 18, 2026", status: "pending", xp: "+350 XP" },
-    { id: "3", code: "MTH-302", name: "Eigenvalues & Spectral Theorems", due: "Oct 05, 2026", status: "complete", xp: "+500 XP" },
-    { id: "4", code: "CS-405", name: "Requirements Engineering SRS Documentation", due: "Oct 01, 2026", status: "overdue", xp: "+600 XP" },
-  ]);
+  const [missions, setMissions] = useState<Assignment[]>([]);
+
+  useEffect(() => {
+    async function loadMissions() {
+      try {
+        const res = await fetch("/api/assignments");
+        const json = await res.json();
+        if (json.success && json.data) {
+          const formattedMissions = json.data.map((m: any) => ({
+            id: m.id,
+            code: m.code,
+            name: m.title,
+            due: new Date(m.due).toLocaleDateString("en-US", {
+              month: "short",
+              day: "2-digit",
+              year: "numeric",
+            }),
+            status: m.status,
+            xp: m.xp,
+          }));
+          setMissions(formattedMissions);
+        } else {
+          setError(json.error || "Failed to load active directives");
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to establish secure link to system core");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMissions();
+  }, []);
 
   const filteredMissions = missions.filter((m) => {
     if (filter === "all") return true;
@@ -54,29 +82,79 @@ export default function MissionsPage() {
     }
   };
 
-  const triggerUpload = () => {
+  const triggerUpload = async () => {
+    if (!selectedMission) return;
     setUploading(true);
     setUploadProgress(0);
     setUploadSuccess("");
 
-    const interval = setInterval(() => {
+    const progressInterval = setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          setUploadSuccess(`Mission upload complete. Code ${selectedMission?.code}-SUB calibrated.`);
-          // Mark mission as complete in state
-          setMissions((prevMissions) =>
-            prevMissions.map((m) =>
-              m.id === selectedMission?.id ? { ...m, status: "complete" } : m
-            )
-          );
-          return 100;
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
         }
-        return prev + 25;
+        return prev + 10;
       });
-    }, 300);
+    }, 80);
+
+    try {
+      const res = await fetch(`/api/assignments/${selectedMission.id}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: "data:application/pdf;base64,JVBERi0xLjQK...",
+          fileName: `${selectedMission.code.toLowerCase()}_submission.pdf`,
+        }),
+      });
+
+      const json = await res.json();
+      clearInterval(progressInterval);
+
+      if (json.success) {
+        setUploadProgress(100);
+        setUploading(false);
+        setUploadSuccess(
+          `Mission upload complete. Code ${selectedMission.code}-SUB calibrated. Received ${selectedMission.xp}!`
+        );
+        setMissions((prevMissions) =>
+          prevMissions.map((m) =>
+            m.id === selectedMission.id ? { ...m, status: "complete" } : m
+          )
+        );
+      } else {
+        setUploading(false);
+        setUploadSuccess(`Upload rejected: ${json.error}`);
+      }
+    } catch (err: any) {
+      clearInterval(progressInterval);
+      setUploading(false);
+      setUploadSuccess(`Transmission failed: Connection lost.`);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex relative">
+        <SideNavBar />
+        <main className="flex-1 ml-64 p-8 flex flex-col items-center justify-center font-mono text-xs text-primary animate-pulse">
+          Retrieving Mission Directives...
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex relative">
+        <SideNavBar />
+        <main className="flex-1 ml-64 p-8 flex flex-col items-center justify-center font-mono text-xs text-error">
+          <span className="material-symbols-outlined text-4xl mb-2">error</span>
+          <span>{error}</span>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
