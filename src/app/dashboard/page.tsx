@@ -3,23 +3,77 @@
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
 import { XPProgress } from "@/components/XPProgress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [hoveredData, setHoveredData] = useState<{ x: string; y: number } | null>(null);
 
-  const stats = [
-    { name: "Attendance", value: "92%", diff: "+2.4%", border: "border-l-primary", text: "text-primary" },
-    { name: "CGPA", value: "3.8", diff: "Top 5%", border: "border-l-secondary", text: "text-secondary" },
-    { name: "Assignments", value: "12", diff: "Pending", border: "border-l-error", text: "text-error" },
-    { name: "Productivity", value: "High", diff: "Active", border: "border-l-tertiary", text: "text-tertiary" },
-  ];
-
-  const rankings = [
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [heatmapData, setHeatmapData] = useState<number[]>([]);
+  const [rankings, setRankings] = useState<any[]>([
     { rank: "01", name: "Ace_Pilot", xp: "98.2k", isUser: false },
     { rank: "02", name: "NovaCore", xp: "94.1k", isUser: false },
     { rank: "03", name: "Flux_Zero", xp: "92.8k", isUser: false },
+  ]);
+  const [userRankRecord, setUserRankRecord] = useState<any>({
+    rank: 12,
+    name: "Commander Sterling",
+    xp: "42.5k",
+  });
+
+  useEffect(() => {
+    // Generate only on client side to prevent hydration mismatches
+    setHeatmapData(Array.from({ length: 238 }, () => Math.floor(Math.random() * 5)));
+    async function loadData() {
+      try {
+        const res = await fetch("/api/dashboard");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setDashboardData(json.data);
+          }
+        }
+
+        const leaderRes = await fetch("/api/leaderboard");
+        if (leaderRes.ok) {
+          const leaderJson = await leaderRes.json();
+          if (leaderJson.success && leaderJson.data) {
+            const top3 = leaderJson.data.slice(0, 3).map((r: any) => ({
+              rank: String(r.rank).padStart(2, "0"),
+              name: r.name,
+              xp: `${(r.xp / 1000).toFixed(1)}k`,
+              isUser: r.isUser,
+            }));
+            if (top3.length > 0) {
+              setRankings(top3);
+            }
+
+            const userRecord = leaderJson.data.find((r: any) => r.isUser);
+            if (userRecord) {
+              setUserRankRecord({
+                rank: userRecord.rank,
+                name: userRecord.name,
+                xp: `${(userRecord.xp / 1000).toFixed(1)}k`,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading dashboard metrics:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const stats = [
+    { name: "Attendance", value: dashboardData?.metrics?.attendance ?? "92%", diff: "Optimal", border: "border-l-primary", text: "text-primary" },
+    { name: "CGPA", value: dashboardData?.metrics?.cgpa ? dashboardData.metrics.cgpa.toFixed(1) : "3.8", diff: "Academic", border: "border-l-secondary", text: "text-secondary" },
+    { name: "Assignments", value: dashboardData?.metrics?.pendingAssignments !== undefined ? String(dashboardData.metrics.pendingAssignments) : "12", diff: "Pending", border: "border-l-error", text: "text-error" },
+    { name: "Productivity", value: "High", diff: "Active", border: "border-l-tertiary", text: "text-tertiary" },
   ];
 
   const commandLogs = [
@@ -54,9 +108,6 @@ export default function DashboardPage() {
       color: "text-tertiary border-tertiary bg-tertiary/20",
     },
   ];
-
-  // Mock heatmap cell intensities (0 to 4)
-  const heatmapData = Array.from({ length: 238 }, () => Math.floor(Math.random() * 5));
 
   const getHeatmapColor = (intensity: number) => {
     switch (intensity) {
@@ -99,7 +150,7 @@ export default function DashboardPage() {
                   verified
                 </span>
                 <h2 className="font-geist text-2xl font-bold tracking-tight text-on-surface">
-                  Welcome back, Commander Sterling
+                  Welcome back, {dashboardData?.student?.name ? `Commander ${dashboardData.student.name}` : "Commander"}
                 </h2>
               </div>
               <p className="text-on-surface-variant font-body-lg text-sm max-w-lg">
@@ -107,7 +158,12 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="relative z-10 mt-auto">
-              <XPProgress level={42} currentXp={8500} maxXp={10000} streak={15} />
+              <XPProgress 
+                level={dashboardData?.metrics?.level ?? 1} 
+                currentXp={dashboardData?.metrics?.xp ? (dashboardData.metrics.xp % 10000) : 0} 
+                maxXp={10000} 
+                streak={dashboardData?.metrics?.streak ?? 0} 
+              />
             </div>
           </section>
 
@@ -138,13 +194,13 @@ export default function DashboardPage() {
               <div className="my-2 border-t border-dashed border-outline-variant"></div>
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs">
                 <div className="flex items-center gap-3">
-                  <span className="w-5 font-mono text-primary font-bold">12</span>
+                  <span className="w-5 font-mono text-primary font-bold">{userRankRecord.rank}</span>
                   <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[10px]">
-                    S
+                    {userRankRecord.name[0]}
                   </div>
-                  <span className="font-sans text-on-surface font-bold">Commander Sterling</span>
+                  <span className="font-sans text-on-surface font-bold">{userRankRecord.name}</span>
                 </div>
-                <span className="font-mono text-primary font-bold">42.5k XP</span>
+                <span className="font-mono text-primary font-bold">{userRankRecord.xp} XP</span>
               </div>
             </div>
           </aside>

@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commanderId || !accessCode) {
       setError("Please fill in all credential fields.");
@@ -20,11 +20,23 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Simulate futuristic validation delay
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: commanderId, password: accessCode }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        router.push("/dashboard");
+      } else {
+        setError(json.error || "Access denied. Credential signature invalid.");
+      }
+    } catch (err: any) {
+      setError("System interface timeout. Core connection lost.");
+    } finally {
       setLoading(false);
-      router.push("/dashboard");
-    }, 1200);
+    }
   };
 
   return (

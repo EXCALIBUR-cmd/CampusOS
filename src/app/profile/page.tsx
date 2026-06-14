@@ -2,8 +2,31 @@
 
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
+import { useState, useEffect } from "react";
 
 export default function ProfilePage() {
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setProfileData(json.data);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
   const courses = [
     { code: "CS-401", name: "Artificial Intelligence", grade: "A", time: "Mon, Wed // 10:00 AM", instructor: "Dr. K. Vance" },
     { code: "CS-402", name: "Database Management", grade: "A-", time: "Tue, Thu // 02:00 PM", instructor: "Prof. L. Croft" },
@@ -26,7 +49,7 @@ export default function ProfilePage() {
 
       {/* Main Content Canvas */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        <Header title="Commander Profile" subtitle="Commander Dossier: Sterling_42" />
+        <Header title="Commander Profile" subtitle={`Commander Dossier: ${profileData?.commanderId || "..."}`} />
 
         <div className="grid grid-cols-12 gap-6">
           {/* Left Column: Dossier Header & Courses (Span 8) */}
@@ -37,9 +60,9 @@ export default function ProfilePage() {
 
               {/* Avatar Hexagon Frame */}
               <div className="w-24 h-24 rounded-full border-2 border-primary bg-primary/10 flex items-center justify-center font-bold text-[36px] text-primary relative shrink-0 neon-glow">
-                S
+                {profileData?.name?.[0] || "C"}
                 <span className="absolute bottom-0 right-0 bg-secondary px-1.5 py-0.5 rounded text-[8px] font-mono text-white font-bold uppercase tracking-wider leading-none">
-                  LVL 42
+                  LVL {profileData?.level ?? 1}
                 </span>
               </div>
 
@@ -47,18 +70,19 @@ export default function ProfilePage() {
               <div className="space-y-3 text-center sm:text-left">
                 <div>
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <h2 className="font-geist text-2xl font-bold text-on-surface">Commander Sterling</h2>
+                    <h2 className="font-geist text-2xl font-bold text-on-surface">
+                      {profileData?.name ? `Commander ${profileData.name}` : "Commander"}
+                    </h2>
                     <span className="px-2.5 py-0.5 bg-secondary/15 border border-secondary/20 text-secondary font-mono text-[9px] uppercase tracking-wider rounded font-bold">
                       Rank #12 Global
                     </span>
                   </div>
                   <p className="text-on-surface-variant font-mono text-[11px] uppercase tracking-widest mt-1">
-                    Faculty of Computer Science // Cybersecurity Major
+                    Faculty of {profileData?.department || "Computer Science"} // Semester {profileData?.semester ?? 1}
                   </p>
                 </div>
                 <p className="text-on-surface-variant text-sm max-w-xl leading-relaxed">
-                  Cybersecurity and systems engineering specialist. Currently active in the Alpha Squad
-                  guild, orchestrating secure networks and algorithmic modeling strategies.
+                  {profileData?.bio || "Cybersecurity and systems engineering specialist. Currently active in the Alpha Squad guild, orchestrating secure networks and algorithmic modeling strategies."}
                 </p>
               </div>
             </section>

@@ -14,7 +14,7 @@ interface Message {
 export default function AICommandPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
+      id: "initial",
       sender: "ai",
       text: "Academic Intel interface calibrated. Welcome back, Commander Sterling. State your academic directive. I am configured to assist with CS-401 (AI Ethics), CS-402 (Databases), and MTH-302 (Linear Algebra).",
       time: "10:00 AM",
@@ -28,12 +28,43 @@ export default function AICommandPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const handleSend = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        // Fetch student profile first to calibrate welcome message
+        const profileRes = await fetch("/api/profile");
+        let studentName = "Commander";
+        if (profileRes.ok) {
+          const profileJson = await profileRes.json();
+          if (profileJson.success && profileJson.data?.name) {
+            studentName = profileJson.data.name;
+            setMessages(prev => prev.map(m => m.id === "initial" ? {
+              ...m,
+              text: `Academic Intel interface calibrated. Welcome back, Commander ${studentName}. State your academic directive. I am configured to assist with CS-401 (AI Ethics), CS-402 (Databases), and MTH-302 (Linear Algebra).`
+            } : m));
+          }
+        }
+
+        const response = await fetch("/api/ai");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.messages && data.messages.length > 0) {
+            setMessages(data.messages);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load conversation history:", err);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now(),
+      id: Date.now().toString(),
       sender: "user",
       text: inputValue,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -43,34 +74,43 @@ export default function AICommandPage() {
     setInputValue("");
     setLoading(true);
 
-    // Simulated Intelligence response
-    setTimeout(() => {
-      let replyText = "Directive registered, Commander. Let me analyze that query against our system database. ";
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: userMessage.text }),
+      });
 
-      if (inputValue.toLowerCase().includes("attendance")) {
-        replyText +=
-          "Your overall attendance rating is 92%. However, Software Engineering (CS-405) has reached a critical threshold with 0 remaining absences allowed. I recommend prioritizing the next SE lecture.";
-      } else if (inputValue.toLowerCase().includes("math") || inputValue.toLowerCase().includes("algebra")) {
-        replyText +=
-          "Linear Algebra (MTH-302) shows optimal mastery at 92%. Your next mission 'Eigenvalues & Spectral Theorems' is complete. I recommend reviewing eigenvectors for the upcoming module quiz.";
-      } else if (inputValue.toLowerCase().includes("assignment") || inputValue.toLowerCase().includes("mission")) {
-        replyText +=
-          "You have 3 active assignments pending. AI Ethics CS-401 is due in 4 days. You can submit files directly through the Missions Control Submission Terminal.";
-      } else {
-        replyText +=
-          "Analysis complete. Your CGPA rating remains strong at 3.8. Focus on active course deliverables to optimize your next weekly XP calibration.";
+      if (!response.ok) {
+        throw new Error(`Server returned error ${response.status}`);
       }
 
-      const aiResponse: Message = {
-        id: Date.now() + 1,
+      const resData = await response.json();
+      if (resData.success && resData.data) {
+        const aiResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: resData.data.text,
+          time: resData.data.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+      } else {
+        throw new Error(resData.error || "Failed to generate response");
+      }
+    } catch (err: any) {
+      console.error("AI Error:", err);
+      const errorResponse: Message = {
+        id: (Date.now() + 2).toString(),
         sender: "ai",
-        text: replyText,
+        text: `Error: ${err.message || "Unable to contact the AI Matrix. Verify your network or Groq configurations."}`,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-
-      setMessages((prev) => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const samplePrompts = [
