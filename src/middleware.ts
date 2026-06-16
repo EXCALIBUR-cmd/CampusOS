@@ -51,8 +51,8 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Protect frontend /admin and /courses-admin route
-  if (pathname.startsWith("/admin") || pathname.startsWith("/courses-admin")) {
+  // Protect frontend routes
+  if (pathname.startsWith("/admin") || pathname.startsWith("/courses-admin") || pathname.startsWith("/departments-admin") || pathname.startsWith("/support")) {
     const token = request.cookies.get("token")?.value;
     if (!token) {
       return NextResponse.redirect(new URL("/", request.url));
@@ -66,7 +66,7 @@ export function middleware(request: NextRequest) {
       
       const payload = JSON.parse(atob(parts[1]));
       
-      if (pathname.startsWith("/admin") && payload.role !== "admin") {
+      if ((pathname.startsWith("/admin") || pathname.startsWith("/departments-admin")) && payload.role !== "admin") {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
       
@@ -84,5 +84,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/admin/:path*", "/courses-admin/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/courses-admin/:path*", "/departments-admin/:path*", "/support/:path*"],
 };

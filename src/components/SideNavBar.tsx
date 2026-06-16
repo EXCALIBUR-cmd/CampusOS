@@ -97,6 +97,12 @@ export function SideNavBar() {
       label: "Syllabus Registry",
     },
     {
+      name: "Departments",
+      icon: "domain",
+      href: "/departments-admin",
+      label: "Divisions",
+    },
+    {
       name: "Admin Portal",
       icon: "admin_panel_settings",
       href: "/admin",
@@ -108,6 +114,7 @@ export function SideNavBar() {
     if (item.name === "AI Command" && role !== "student") return false;
     if (item.name === "Admin Portal" && role !== "admin") return false;
     if (item.name === "Course Mgmt" && role === "student") return false;
+    if (item.name === "Departments" && role !== "admin") return false;
     return true;
   });
 
@@ -160,7 +167,7 @@ export function SideNavBar() {
       <div className="px-6 pt-4 border-t border-outline-variant space-y-3">
         <Link
           className="flex items-center gap-4 text-on-surface-variant font-medium hover:text-primary transition-all text-xs"
-          href="#"
+          href="/support"
         >
           <span className="material-symbols-outlined text-[18px]">contact_support</span>
           <span className="font-mono uppercase tracking-wider">Support</span>

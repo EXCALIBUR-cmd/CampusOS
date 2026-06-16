@@ -9,6 +9,7 @@ export default function AdminPortal() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   
   // Search, Filter, Pagination state
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,21 +63,46 @@ export default function AdminPortal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
+      const url = editingUserId ? `/api/admin/users/${editingUserId}` : "/api/admin/users";
+      const method = editingUserId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {
         setShowModal(false);
+        setEditingUserId(null);
         fetchUsers();
       } else {
-        alert(data.error || "Error creating user");
+        alert(data.error || "Error saving user");
       }
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const openModalForCreate = () => {
+    setEditingUserId(null);
+    setFormData({ email: "", password: "", role: "student", name: "", department: "", semester: 1, designation: "" });
+    setShowModal(true);
+  };
+
+  const openModalForEdit = (user: any) => {
+    setEditingUserId(user._id);
+    const profile = user.role === "student" ? user.studentProfile : user.role === "teacher" ? user.teacherProfile : user.adminProfile;
+    setFormData({
+      email: user.email,
+      password: "", // Leave blank for edit unless changing (though API doesn't handle pass update yet)
+      role: user.role,
+      name: profile?.name || "",
+      department: profile?.department || "",
+      semester: profile?.semester || 1,
+      designation: profile?.designation || "",
+    });
+    setShowModal(true);
   };
 
   const getProfileName = (user: any) => {
@@ -157,7 +183,7 @@ export default function AdminPortal() {
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openModalForCreate}
             className="bg-primary hover:bg-primary/80 transition-colors px-6 py-2.5 rounded-xl font-bold font-geist text-on-primary shadow-lg shadow-primary/30 text-sm flex items-center gap-2 shrink-0"
           >
             <span className="material-symbols-outlined text-[20px]">person_add</span>
@@ -243,7 +269,14 @@ export default function AdminPortal() {
                           {user.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button
+                          onClick={() => openModalForEdit(user)}
+                          className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-lg hover:bg-primary/10"
+                          title="Edit User"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
                         <button
                           onClick={() => handleDelete(user._id)}
                           className="text-on-surface-variant hover:text-error transition-colors p-2 rounded-lg hover:bg-error/10"
@@ -301,7 +334,7 @@ export default function AdminPortal() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass-card rounded-2xl w-full max-w-md border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-outline-variant flex justify-between items-center">
-              <h2 className="text-xl font-geist font-bold text-on-surface">Create New User</h2>
+              <h2 className="text-xl font-geist font-bold text-on-surface">{editingUserId ? "Edit User" : "Create New User"}</h2>
               <button 
                 onClick={() => setShowModal(false)}
                 className="text-on-surface-variant hover:text-on-surface transition-colors"
@@ -315,21 +348,24 @@ export default function AdminPortal() {
                 <input
                   type="email"
                   required
-                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                  disabled={!!editingUserId}
+                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
+              {!editingUserId && (
+                <div>
+                  <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Password</label>
+                  <input
+                    type="password"
+                    required
+                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Name</label>
                 <input
@@ -344,9 +380,10 @@ export default function AdminPortal() {
                 <div>
                   <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Role</label>
                   <select
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
+                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none disabled:opacity-50"
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    disabled={!!editingUserId}
                   >
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
@@ -414,7 +451,7 @@ export default function AdminPortal() {
                   type="submit"
                   className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/80 text-on-primary transition-colors font-bold font-geist text-sm shadow-lg shadow-primary/20"
                 >
-                  Confirm Creation
+                  {editingUserId ? "Save Changes" : "Confirm Creation"}
                 </button>
               </div>
             </form>

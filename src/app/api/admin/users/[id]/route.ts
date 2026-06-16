@@ -4,6 +4,9 @@ import { User } from "@/models/User";
 import { Student } from "@/models/Student";
 import { Teacher } from "@/models/Teacher";
 import { Admin } from "@/models/Admin";
+import { Course } from "@/models/Course";
+import { Attendance } from "@/models/Attendance";
+import { SupportTicket } from "@/models/SupportTicket";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,9 +18,27 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
+    // 1. Delete all support tickets created by the user
+    await SupportTicket.deleteMany({ user: resolvedParams.id });
+
+    // 2. Clean up specific profiles and references
     if (user.role === "student" && user.studentProfile) {
+      // Remove student from all enrolled courses
+      await Course.updateMany(
+        { students: user.studentProfile },
+        { $pull: { students: user.studentProfile } }
+      );
+      // Delete all attendance records for this student
+      await Attendance.deleteMany({ student: user.studentProfile });
+      
       await Student.findByIdAndDelete(user.studentProfile);
     } else if (user.role === "teacher" && user.teacherProfile) {
+      // Remove teacher from all assigned courses
+      await Course.updateMany(
+        { teachers: user.teacherProfile },
+        { $pull: { teachers: user.teacherProfile } }
+      );
+      
       await Teacher.findByIdAndDelete(user.teacherProfile);
     } else if (user.role === "admin" && user.adminProfile) {
       await Admin.findByIdAndDelete(user.adminProfile);
