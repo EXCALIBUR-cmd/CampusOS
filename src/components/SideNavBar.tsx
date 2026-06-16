@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export function CampusOSLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (
@@ -33,8 +34,20 @@ export function CampusOSLogo({ className = "w-10 h-10" }: { className?: string }
 
 export function SideNavBar() {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
 
-  const navItems = [
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setRole(data.data.role);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const allNavItems = [
     {
       name: "Dashboard",
       icon: "dashboard",
@@ -63,7 +76,7 @@ export function SideNavBar() {
       name: "Profile",
       icon: "person",
       href: "/profile",
-      label: "Commander dossier",
+      label: "Student profile",
     },
     {
       name: "Missions",
@@ -77,7 +90,35 @@ export function SideNavBar() {
       href: "/ai-command",
       label: "Academic Intel",
     },
+    {
+      name: "Course Mgmt",
+      icon: "library_books",
+      href: "/courses-admin",
+      label: "Syllabus Registry",
+    },
+    {
+      name: "Departments",
+      icon: "domain",
+      href: "/departments-admin",
+      label: "Divisions",
+    },
+    {
+      name: "Admin Portal",
+      icon: "admin_panel_settings",
+      href: "/admin",
+      label: "System Mgmt",
+    },
   ];
+
+  const navItems = allNavItems.filter(item => {
+    if (item.name === "AI Command" && role !== "student") return false;
+    if (item.name === "Admin Portal" && role !== "admin") return false;
+    if (item.name === "Course Mgmt" && role === "student") return false;
+    if (item.name === "Departments" && role !== "admin") return false;
+    if (item.name === "The Vault" && role !== "student") return false;
+    if (item.name === "Profile" && role !== "student") return false;
+    return true;
+  });
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/80 backdrop-blur-xl border-r border-outline-variant flex flex-col py-8 z-50">
@@ -128,14 +169,7 @@ export function SideNavBar() {
       <div className="px-6 pt-4 border-t border-outline-variant space-y-3">
         <Link
           className="flex items-center gap-4 text-on-surface-variant font-medium hover:text-primary transition-all text-xs"
-          href="#"
-        >
-          <span className="material-symbols-outlined text-[18px]">settings</span>
-          <span className="font-mono uppercase tracking-wider">Settings</span>
-        </Link>
-        <Link
-          className="flex items-center gap-4 text-on-surface-variant font-medium hover:text-primary transition-all text-xs"
-          href="#"
+          href="/support"
         >
           <span className="material-symbols-outlined text-[18px]">contact_support</span>
           <span className="font-mono uppercase tracking-wider">Support</span>

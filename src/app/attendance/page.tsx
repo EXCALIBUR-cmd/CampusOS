@@ -2,19 +2,9 @@
 
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 
-function CircularProgress({
-  percent,
-  size = 72,
-  strokeWidth = 6,
-  colorClass = "stroke-primary",
-}: {
-  percent: number;
-  size?: number;
-  strokeWidth?: number;
-  colorClass?: string;
-}) {
+function CircularProgress({ percent, size = 72, strokeWidth = 6, colorClass = "stroke-primary" }: any) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percent / 100) * circumference;
@@ -22,265 +12,360 @@ function CircularProgress({
   return (
     <div className="relative flex items-center justify-center">
       <svg className="circle-progress -rotate-90" width={size} height={size}>
-        {/* Background Track */}
-        <circle
-          className="stroke-outline-variant/20"
-          fill="transparent"
-          strokeWidth={strokeWidth}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-        />
-        {/* Progress Line */}
-        <circle
-          className={`${colorClass} transition-all duration-500 ease-out`}
-          fill="transparent"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-        />
+        <circle className="stroke-outline-variant/20" fill="transparent" strokeWidth={strokeWidth} cx={size / 2} cy={size / 2} r={radius} />
+        <circle className={`${colorClass} transition-all duration-500 ease-out`} fill="transparent" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" cx={size / 2} cy={size / 2} r={radius} />
       </svg>
-      <span className="absolute font-mono text-[11px] font-bold">{percent}%</span>
+      <span className="absolute font-mono text-[11px] font-bold">{Math.round(percent)}%</span>
     </div>
   );
 }
 
-interface PresenceLog {
-  id: number;
-  subject: string;
-  code: string;
-  time: string;
-  status: "present" | "late" | "absent";
-}
-
 export default function AttendancePage() {
-  const [logs, setLogs] = useState<PresenceLog[]>([
-    { id: 1, subject: "Artificial Intelligence", code: "CS-401", time: "Today, 10:15 AM", status: "present" },
-    { id: 2, subject: "Database Management", code: "CS-402", time: "Yesterday, 02:30 PM", status: "present" },
-    { id: 3, subject: "Linear Algebra", code: "MTH-302", time: "Oct 10, 09:00 AM", status: "late" },
-    { id: 4, subject: "Software Engineering", code: "CS-405", time: "Oct 09, 11:30 AM", status: "present" },
-  ]);
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [checkingIn, setCheckingIn] = useState(false);
-  const [checkInStep, setCheckInStep] = useState(0);
-  const [successMsg, setSuccessMsg] = useState("");
+  // Student View State
+  const [studentRecords, setStudentRecords] = useState<any[]>([]);
+  const [dateFilter, setDateFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
-  const handleCheckIn = () => {
-    setCheckingIn(true);
-    setCheckInStep(1);
-    setSuccessMsg("");
+  // Teacher/Admin View State
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
-    // Step 1: Calibrating
-    setTimeout(() => {
-      setCheckInStep(2);
-      // Step 2: Verifying
-      setTimeout(() => {
-        setCheckInStep(3);
-        // Step 3: Completed
-        setTimeout(() => {
-          const newLog: PresenceLog = {
-            id: Date.now(),
-            subject: "Artificial Intelligence",
-            code: "CS-401",
-            time: "Just now",
-            status: "present",
-          };
-          setLogs((prev) => [newLog, ...prev]);
-          setCheckingIn(false);
-          setCheckInStep(0);
-          setSuccessMsg("Check-in successful! Code CS-401 registered.");
-        }, 1000);
-      }, 1000);
-    }, 1000);
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setRole(data.data.role);
+          if (data.data.role === "student") {
+            fetchStudentAttendance();
+          } else {
+            fetchCourses();
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if ((role === "teacher" || role === "admin") && selectedCourse) {
+      fetchClassAttendance(selectedCourse, selectedDate);
+    }
+  }, [selectedCourse, selectedDate]);
+
+  const fetchStudentAttendance = async () => {
+    try {
+      const res = await fetch("/api/attendance");
+      const json = await res.json();
+      if (json.success) setStudentRecords(json.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const subjects = [
-    { name: "Artificial Intelligence", code: "CS-401", percent: 95, color: "stroke-primary", text: "text-primary" },
-    { name: "Database Management", code: "CS-402", percent: 88, color: "stroke-secondary", text: "text-secondary" },
-    { name: "Linear Algebra", code: "MTH-302", percent: 92, color: "stroke-tertiary", text: "text-tertiary" },
-    { name: "Software Engineering", code: "CS-405", percent: 78, color: "stroke-error", text: "text-error" },
-  ];
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch("/api/courses");
+      const json = await res.json();
+      if (json.success) {
+        setCourses(json.data);
+        if (json.data.length > 0) setSelectedCourse(json.data[0]._id);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClassAttendance = async (courseId: string, date: string) => {
+    try {
+      // 1. Get existing records
+      const res = await fetch(`/api/attendance?courseId=${courseId}&date=${date}`);
+      const json = await res.json();
+      const existingRecords = json.success ? json.data : [];
+
+      // 2. Get course students
+      const course = courses.find(c => c._id === courseId);
+      if (!course) return;
+
+      // Merge
+      const mergedData = course.students.map((student: any) => {
+        const existing = existingRecords.find((r: any) => r.student._id === student._id);
+        return {
+          studentId: student._id,
+          name: student.name,
+          commanderId: student.commanderId,
+          status: existing ? existing.status : "present", // default to present
+        };
+      });
+      setAttendanceData(mergedData);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleStatusChange = (studentId: string, newStatus: string) => {
+    setAttendanceData(prev => prev.map(a => a.studentId === studentId ? { ...a, status: newStatus } : a));
+  };
+
+  const handleSaveAttendance = async () => {
+    setSavingAttendance(true);
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: selectedCourse,
+          date: selectedDate,
+          records: attendanceData.map(a => ({ studentId: a.studentId, status: a.status }))
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert("Attendance saved successfully!");
+      } else {
+        alert("Failed to save: " + json.error);
+      }
+    } catch (err) {
+      alert("Network error.");
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
+  // Compute student stats
+  const studentStats = useMemo(() => {
+    if (role !== "student") return [];
+    
+    const courseMap: any = {};
+    studentRecords.forEach(r => {
+      const cId = r.course._id;
+      if (!courseMap[cId]) {
+        courseMap[cId] = { course: r.course, total: 0, attended: 0, absences: 0 };
+      }
+      courseMap[cId].total++;
+      if (r.status === "present" || r.status === "late") courseMap[cId].attended++;
+      if (r.status === "absent") courseMap[cId].absences++;
+    });
+
+    return Object.values(courseMap).map((s: any) => ({
+      ...s,
+      percent: s.total > 0 ? (s.attended / s.total) * 100 : 0
+    }));
+  }, [studentRecords, role]);
+
+  const filteredRecords = useMemo(() => {
+    return studentRecords.filter(r => {
+      let matchesDate = true;
+      let matchesStatus = true;
+      if (dateFilter) {
+        const d = new Date(r.date);
+        const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        matchesDate = localDateStr === dateFilter;
+      }
+      if (statusFilter) {
+        matchesStatus = r.status === statusFilter;
+      }
+      return matchesDate && matchesStatus;
+    }).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [studentRecords, dateFilter, statusFilter]);
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Side Navigation */}
       <SideNavBar />
-
-      {/* Main Content Canvas */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        <Header title="System Presence" subtitle="Operational Tracker: Attendance Registry" />
+        <Header title={role === "student" ? "System Presence" : "Attendance Tracker"} subtitle="Operational Tracker: Attendance Registry" />
 
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Column: Progress Wheels (Span 8) */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
-            <section className="glass-card p-6 rounded-2xl">
-              <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">
-                Active Courses Status
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                {subjects.map((sub) => (
-                  <div key={sub.code} className="flex flex-col items-center text-center space-y-3 p-4 rounded-xl hover:bg-white/5 transition-all">
-                    <CircularProgress percent={sub.percent} colorClass={sub.color} />
-                    <div>
-                      <h4 className="font-geist text-xs font-bold text-on-surface leading-tight">
-                        {sub.name}
-                      </h4>
-                      <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest mt-1">
-                        {sub.code}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Subject Registry Table */}
-            <section className="glass-card p-6 rounded-2xl">
-              <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">
-                Course Attendance Breakdown
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
-                      <th className="pb-3 font-semibold">Subject</th>
-                      <th className="pb-3 font-semibold">Attended / Total</th>
-                      <th className="pb-3 font-semibold">Absences Allowed</th>
-                      <th className="pb-3 font-semibold">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/20">
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 font-semibold">Artificial Intelligence (CS-401)</td>
-                      <td className="py-4 font-mono">19 / 20 lectures</td>
-                      <td className="py-4 font-mono">4 remaining</td>
-                      <td className="py-4"><span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] uppercase font-mono tracking-wider font-semibold">Excellent</span></td>
-                    </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 font-semibold">Database Management (CS-402)</td>
-                      <td className="py-4 font-mono">22 / 25 lectures</td>
-                      <td className="py-4 font-mono">3 remaining</td>
-                      <td className="py-4"><span className="px-2 py-0.5 rounded bg-secondary/10 border border-secondary/20 text-secondary text-[10px] uppercase font-mono tracking-wider font-semibold">Optimal</span></td>
-                    </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 font-semibold">Linear Algebra (MTH-302)</td>
-                      <td className="py-4 font-mono">12 / 13 lectures</td>
-                      <td className="py-4 font-mono">5 remaining</td>
-                      <td className="py-4"><span className="px-2 py-0.5 rounded bg-tertiary/10 border border-tertiary/20 text-tertiary text-[10px] uppercase font-mono tracking-wider font-semibold">Optimal</span></td>
-                    </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 font-semibold">Software Engineering (CS-405)</td>
-                      <td className="py-4 font-mono">14 / 18 lectures</td>
-                      <td className="py-4 font-mono">0 remaining</td>
-                      <td className="py-4"><span className="px-2 py-0.5 rounded bg-error/10 border border-error/20 text-error text-[10px] uppercase font-mono tracking-wider font-semibold">Critical</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
+        {loading ? (
+          <div className="mt-8 space-y-6">
+             <div className="w-full h-32 bg-surface-container-low animate-pulse rounded-2xl"></div>
+             <div className="w-full h-64 bg-surface-container-low animate-pulse rounded-2xl"></div>
           </div>
-
-          {/* Right Column: Terminal Simulator & History Log (Span 4) */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            {/* Terminal Simulator */}
-            <section className="glass-card p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-[-10%] right-[-10%] w-24 h-24 bg-primary/5 rounded-full blur-[40px]"></div>
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface">
-                    Secure Check-in
-                  </h3>
-                  <span className="material-symbols-outlined text-primary text-[20px]">nfc</span>
+        ) : role === "student" ? (
+          <div className="mt-8 space-y-6">
+            <section className="glass-card p-6 rounded-2xl">
+              <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">Active Courses Status</h3>
+              {studentStats.length === 0 ? (
+                <div className="text-on-surface-variant text-sm py-4">No attendance records found yet.</div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                  {studentStats.map((stat: any, i) => (
+                    <div key={stat.course._id} className="flex flex-col items-center text-center space-y-3 p-4 rounded-xl bg-white/5 border border-outline-variant/30">
+                      <CircularProgress 
+                        percent={stat.percent} 
+                        colorClass={stat.percent > 85 ? "stroke-primary" : stat.percent > 70 ? "stroke-secondary" : "stroke-error"} 
+                      />
+                      <div>
+                        <h4 className="font-geist text-xs font-bold text-on-surface leading-tight">{stat.course.name}</h4>
+                        <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest mt-1">{stat.course.code}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-on-surface-variant text-[13px] leading-relaxed mb-6">
-                  Verify your presence coordinates inside active lecture zones to register attendance credentials.
-                </p>
-
-                {checkingIn && (
-                  <div className="mb-6 p-4 rounded-xl bg-white/5 border border-outline-variant/30 space-y-3 font-mono text-[10px]">
-                    <div className="flex justify-between items-center">
-                      <span className="text-on-surface-variant uppercase tracking-wider">Status:</span>
-                      <span className="text-primary animate-pulse font-bold uppercase tracking-widest">
-                        {checkInStep === 1
-                          ? "Calibrating Coordinates..."
-                          : checkInStep === 2
-                          ? "Verifying GPS Grid..."
-                          : "Decrypting Token..."}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary neon-glow transition-all duration-300"
-                        style={{ width: `${(checkInStep / 3) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-
-                {successMsg && (
-                  <div className="mb-6 p-3 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                    <span>{successMsg}</span>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleCheckIn}
-                disabled={checkingIn}
-                className="w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary-container font-mono text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 neon-glow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="material-symbols-outlined text-[18px]">location_on</span>
-                <span>{checkingIn ? "Scanning Zone..." : "Initialize Scan"}</span>
-              </button>
+              )}
             </section>
 
-            {/* Attendance History Timeline */}
-            <section className="glass-card p-6 rounded-2xl flex flex-col h-[350px]">
-              <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">
-                Presence History Log
-              </h3>
-              <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-                {logs.map((log, index) => (
-                  <div key={log.id} className="flex gap-4 relative">
-                    {index < logs.length - 1 && (
-                      <div className="absolute left-[13px] top-8 bottom-[-24px] w-[2px] bg-outline-variant/30"></div>
-                    )}
-                    <div
-                      className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 z-10 ${
-                        log.status === "present"
-                          ? "text-primary border-primary bg-primary/10"
-                          : log.status === "late"
-                          ? "text-secondary border-secondary bg-secondary/10"
-                          : "text-error border-error bg-error/10"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {log.status === "present"
-                          ? "done"
-                          : log.status === "late"
-                          ? "schedule"
-                          : "close"}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-sans text-xs text-on-surface leading-normal font-semibold">
-                        {log.subject}
-                      </p>
-                      <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-wider mt-0.5">
-                        {log.code} // {log.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <section className="glass-card p-6 rounded-2xl flex flex-col">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+                <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface">Attendance Log History</h3>
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="flex-1 sm:flex-none bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="flex-1 sm:flex-none bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
               </div>
+              {studentRecords.length === 0 ? (
+                <div className="text-on-surface-variant text-sm py-4">No history available.</div>
+              ) : filteredRecords.length === 0 ? (
+                <div className="text-on-surface-variant text-sm py-4">No records match your filters.</div>
+              ) : (
+                <div className="overflow-x-auto overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  <table className="w-full text-left border-collapse text-xs relative">
+                    <thead className="sticky top-0 bg-surface-container-lowest/80 backdrop-blur-md z-10">
+                      <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
+                        <th className="pb-3 pt-2 font-semibold">Date</th>
+                        <th className="pb-3 pt-2 font-semibold">Course</th>
+                        <th className="pb-3 pt-2 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20">
+                      {filteredRecords.map(record => (
+                        <tr key={record._id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-4 font-mono">
+                            {(() => {
+                              const d = new Date(record.date);
+                              return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+                            })()}
+                          </td>
+                          <td className="py-4 font-semibold">{record.course.name} <span className="font-mono text-[9px] text-on-surface-variant">({record.course.code})</span></td>
+                          <td className="py-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono tracking-wider font-semibold ${
+                              record.status === "present" ? "bg-primary/10 border border-primary/20 text-primary" :
+                              record.status === "late" ? "bg-secondary/10 border border-secondary/20 text-secondary" :
+                              "bg-error/10 border border-error/20 text-error"
+                            }`}>
+                              {record.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
           </div>
-        </div>
+        ) : (
+          <div className="mt-8 space-y-6">
+            <section className="glass-card p-6 rounded-2xl flex flex-col md:flex-row gap-6 items-end relative overflow-hidden">
+              <div className="absolute top-[-10%] right-[-5%] w-48 h-48 bg-primary/5 rounded-full blur-[60px] pointer-events-none"></div>
+              
+              <div className="flex-1 w-full z-10">
+                <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Select Course</label>
+                <select
+                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary"
+                  value={selectedCourse}
+                  onChange={(e) => setSelectedCourse(e.target.value)}
+                >
+                  {courses.map(c => <option key={c._id} value={c._id}>{c.name} ({c.code})</option>)}
+                  {courses.length === 0 && <option value="">No courses assigned</option>}
+                </select>
+              </div>
+
+              <div className="w-full md:w-64 z-10">
+                <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Date</label>
+                <input
+                  type="date"
+                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </div>
+            </section>
+
+            {selectedCourse && (
+              <section className="glass-card p-6 rounded-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface">Mark Student Attendance</h3>
+                  <button
+                    onClick={handleSaveAttendance}
+                    disabled={savingAttendance || attendanceData.length === 0}
+                    className="px-6 py-2 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary-container font-mono text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-95 transition-all neon-glow disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">save</span>
+                    {savingAttendance ? "Saving..." : "Save Registry"}
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
+                        <th className="pb-3 font-semibold px-4">Student Name</th>
+                        <th className="pb-3 font-semibold px-4">Student ID</th>
+                        <th className="pb-3 font-semibold px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20">
+                      {attendanceData.map((data) => (
+                        <tr key={data.studentId} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4 font-semibold text-sm">{data.name}</td>
+                          <td className="py-3 px-4 font-mono text-on-surface-variant">{data.commanderId}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-2">
+                              {["present", "late", "absent"].map(status => (
+                                <button
+                                  key={status}
+                                  onClick={() => handleStatusChange(data.studentId, status)}
+                                  className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest font-bold rounded transition-colors ${
+                                    data.status === status 
+                                      ? status === "present" ? "bg-primary text-on-primary" : status === "late" ? "bg-secondary text-on-secondary" : "bg-error text-on-error"
+                                      : "bg-surface-container-highest border border-outline-variant text-on-surface-variant hover:bg-white/10"
+                                  }`}
+                                >
+                                  {status}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {attendanceData.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="py-12 text-center text-on-surface-variant text-sm font-mono">No students enrolled in this course.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

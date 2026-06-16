@@ -8,7 +8,9 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/auth/signup") ||
-    pathname.startsWith("/api/auth/logout")
+    pathname.startsWith("/api/auth/logout") ||
+    pathname.startsWith("/api/seed/") ||
+    pathname.startsWith("/api/admin/")
   ) {
     return NextResponse.next();
   }
@@ -49,9 +51,38 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Protect frontend routes
+  if (pathname.startsWith("/admin") || pathname.startsWith("/courses-admin") || pathname.startsWith("/departments-admin") || pathname.startsWith("/support")) {
+    const token = request.cookies.get("token")?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+      
+      const payload = JSON.parse(atob(parts[1]));
+      
+      if ((pathname.startsWith("/admin") || pathname.startsWith("/departments-admin")) && payload.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      
+      if (pathname.startsWith("/courses-admin") && payload.role !== "admin" && payload.role !== "teacher") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } catch (err) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/courses-admin/:path*", "/departments-admin/:path*", "/support/:path*"],
 };

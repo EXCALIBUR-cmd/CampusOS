@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
 import { Student } from "@/models/Student";
 import { Teacher } from "@/models/Teacher";
+import { Admin } from "@/models/Admin";
 
 export async function registerUser(data: {
   email: string;
@@ -46,6 +47,8 @@ export async function registerUser(data: {
         semester: data.semester || 1,
       });
       await student.save();
+      user.studentProfile = student._id;
+      await user.save();
     } else if (data.role === "teacher") {
       const teacher = new Teacher({
         user: user._id,
@@ -54,6 +57,17 @@ export async function registerUser(data: {
         designation: data.designation || "Assistant Professor",
       });
       await teacher.save();
+      user.teacherProfile = teacher._id;
+      await user.save();
+    } else if (data.role === "admin") {
+      const admin = new Admin({
+        user: user._id,
+        name: data.name,
+        department: data.department || "Management",
+      });
+      await admin.save();
+      user.adminProfile = admin._id;
+      await user.save();
     }
   } catch (error) {
     // Cascade delete user credential if profile creation fails
@@ -79,31 +93,8 @@ export async function loginUser(credentials: { email: string; password?: string 
     }
   }
 
-  // --- Auto-register if user doesn't exist ---
   if (!user) {
-    const hashedPassword = await bcrypt.hash(rawPassword, 10);
-    const email = identifier.includes("@") ? identifier.toLowerCase() : `${identifier.toLowerCase()}@campusos.local`;
-
-    user = new User({
-      email,
-      password: hashedPassword,
-      role: "student",
-      isActive: true,
-    });
-    await user.save();
-
-    // Create a matching Student profile
-    const commanderId = identifier.includes("@") ? identifier.split("@")[0] : identifier;
-    const student = new Student({
-      user: user._id,
-      commanderId,
-      name: commanderId.charAt(0).toUpperCase() + commanderId.slice(1),
-      department: "General",
-      semester: 1,
-    });
-    await student.save();
-
-    return { userId: user._id.toString(), role: user.role };
+    throw new Error("Invalid credentials");
   }
 
   // --- Existing user: verify password ---

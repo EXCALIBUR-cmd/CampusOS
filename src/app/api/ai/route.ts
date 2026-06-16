@@ -69,6 +69,20 @@ export async function POST(request: Request) {
       thread = new AIConversation({ student: student._id, messages: [] });
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const queriesToday = thread.messages.filter(
+      (m: any) => m.sender === "user" && new Date(m.time) >= today
+    ).length;
+
+    if (queriesToday >= 10) {
+      return NextResponse.json(
+        { success: false, error: "Daily AI query limit reached (10/10). Please return tomorrow." },
+        { status: 429 }
+      );
+    }
+
     thread.messages.push({
       sender: "user",
       text: prompt,
@@ -86,7 +100,7 @@ export async function POST(request: Request) {
     const messagesForAI = [
       {
         role: "system" as const,
-        content: `You are the CampusOS Academic Intel Matrix, a futuristic and cool AI companion. You assist student ${student.name} (ID: ${student.commanderId}, Semester: ${student.semester}, Department: ${student.department}).
+        content: `You are the CampusOS Academic Intel Matrix, a futuristic and cool AI companion. You assist student ${student.name} (Student ID: ${student.commanderId}, Semester: ${student.semester}, Department: ${student.department}).
 - Talk naturally and conversationally. Answer general questions, code queries, or hold general discussions like a normal chat assistant.
 - Maintain a clean, futuristic, and highly technical tone, but do NOT prefix every message with "System Check" or structure responses as rigid menu lists unless explicitly requested.
 - Only reference specific student dossier properties (Semester, ID, Department) when they are directly relevant to the user's question.`,

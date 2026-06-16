@@ -6,6 +6,7 @@ export interface ITeacher extends Document {
   department: string;
   designation: string;
   subjects: string[];
+  courses: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const TeacherSchema = new Schema<ITeacher>(
     department: { type: String, required: true, index: true },
     designation: { type: String, required: true },
     subjects: { type: [String], default: [] },
+    courses: [{ type: Schema.Types.ObjectId, ref: "Course" }],
   },
   { timestamps: true }
 );

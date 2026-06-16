@@ -29,6 +29,7 @@ export interface IStudent extends Document {
   cgpa: number;
   certifications: ICertification[];
   projects: IProject[];
+  courses: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +64,7 @@ const StudentSchema = new Schema<IStudent>(
     cgpa: { type: Number, default: 0.0 },
     certifications: { type: [CertificationSchema], default: [] },
     projects: { type: [ProjectSchema], default: [] },
+    courses: [{ type: Schema.Types.ObjectId, ref: "Course" }],
   },
   { timestamps: true }
 );

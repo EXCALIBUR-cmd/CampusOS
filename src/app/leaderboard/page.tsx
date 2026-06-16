@@ -81,7 +81,7 @@ export default function LeaderboardPage() {
 
       {/* Main Content Canvas */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        <Header title="Global Rankings" subtitle="Hall of Fame: Commander Standings" />
+        <Header title="Global Rankings" subtitle="Hall of Fame: Student Standings" />
 
         {/* Podium Graphics */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end pt-6">
@@ -165,7 +165,7 @@ export default function LeaderboardPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Commander..."
+                placeholder="Search Student..."
                 className="w-full bg-surface-container-low pl-10 pr-4 py-2 border border-outline-variant/50 focus:border-primary text-on-surface font-sans text-xs rounded-lg focus:outline-none transition-all placeholder:text-outline/40"
               />
             </div>
@@ -194,7 +194,7 @@ export default function LeaderboardPage() {
               <thead>
                 <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
                   <th className="pb-3 font-semibold">Rank</th>
-                  <th className="pb-3 font-semibold">Commander</th>
+                  <th className="pb-3 font-semibold">Student</th>
                   <th className="pb-3 font-semibold">Guild Team</th>
                   <th className="pb-3 font-semibold text-right">XP Yield</th>
                 </tr>

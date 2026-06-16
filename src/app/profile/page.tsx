@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
       {/* Main Content Canvas */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        <Header title="Commander Profile" subtitle={`Commander Dossier: ${profileData?.commanderId || "..."}`} />
+        <Header title="Profile" subtitle={`Student Dossier: ${profileData?.commanderId || "..."}`} />
 
         <div className="grid grid-cols-12 gap-6">
           {/* Left Column: Dossier Header & Courses (Span 8) */}
@@ -71,7 +71,7 @@ export default function ProfilePage() {
                 <div>
                   <div className="flex flex-col sm:flex-row items-center gap-3">
                     <h2 className="font-geist text-2xl font-bold text-on-surface">
-                      {profileData?.name ? `Commander ${profileData.name}` : "Commander"}
+                      {profileData?.name ? `${profileData.name}` : ""}
                     </h2>
                     <span className="px-2.5 py-0.5 bg-secondary/15 border border-secondary/20 text-secondary font-mono text-[9px] uppercase tracking-wider rounded font-bold">
                       Rank #12 Global
