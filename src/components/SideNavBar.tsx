@@ -91,6 +91,12 @@ export function SideNavBar() {
       label: "Academic Intel",
     },
     {
+      name: "Course Mgmt",
+      icon: "library_books",
+      href: "/courses-admin",
+      label: "Syllabus Registry",
+    },
+    {
       name: "Admin Portal",
       icon: "admin_panel_settings",
       href: "/admin",
@@ -101,6 +107,7 @@ export function SideNavBar() {
   const navItems = allNavItems.filter(item => {
     if (item.name === "AI Command" && role !== "student") return false;
     if (item.name === "Admin Portal" && role !== "admin") return false;
+    if (item.name === "Course Mgmt" && role === "student") return false;
     return true;
   });
 
