@@ -11,6 +11,7 @@ import { AssignmentSubmission } from "@/models/AssignmentSubmission";
 import { Attendance } from "@/models/Attendance";
 import { Badge } from "@/models/Badge";
 import { Notification } from "@/models/Notification";
+import { Achievement } from "@/models/Achievement";
 
 export async function getDashboardData(userId: string) {
   await connectToDatabase();
@@ -77,6 +78,7 @@ export async function getDashboardData(userId: string) {
   const studentId = student._id.toString();
 
   const achievementsCount = await Badge.countDocuments({ student: studentId });
+  const totalAchievementsCount = await Achievement.countDocuments();
   const presentCount = await Attendance.countDocuments({ student: studentId, status: "present" });
   const lateCount = await Attendance.countDocuments({ student: studentId, status: "late" });
   const absentCount = await Attendance.countDocuments({ student: studentId, status: "absent" });
@@ -138,7 +140,7 @@ export async function getDashboardData(userId: string) {
       streak: student.streak,
       cgpa: student.cgpa,
       attendance: `${attendanceRate}%`,
-      achievements: `${achievementsCount}/4`,
+      achievements: `${achievementsCount}/${totalAchievementsCount}`,
       pendingAssignments: pendingAssignmentsCount,
       heatmapData,
     },

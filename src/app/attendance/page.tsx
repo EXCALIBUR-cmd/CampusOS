@@ -26,11 +26,16 @@ export default function AttendancePage() {
 
   // Student View State
   const [studentRecords, setStudentRecords] = useState<any[]>([]);
+  const [dateFilter, setDateFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   // Teacher/Admin View State
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [savingAttendance, setSavingAttendance] = useState(false);
 
@@ -160,6 +165,22 @@ export default function AttendancePage() {
     }));
   }, [studentRecords, role]);
 
+  const filteredRecords = useMemo(() => {
+    return studentRecords.filter(r => {
+      let matchesDate = true;
+      let matchesStatus = true;
+      if (dateFilter) {
+        const d = new Date(r.date);
+        const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        matchesDate = localDateStr === dateFilter;
+      }
+      if (statusFilter) {
+        matchesStatus = r.status === statusFilter;
+      }
+      return matchesDate && matchesStatus;
+    }).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [studentRecords, dateFilter, statusFilter]);
+
   return (
     <div className="min-h-screen bg-background flex">
       <SideNavBar />
@@ -195,24 +216,51 @@ export default function AttendancePage() {
               )}
             </section>
 
-            <section className="glass-card p-6 rounded-2xl">
-              <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">Attendance Log History</h3>
+            <section className="glass-card p-6 rounded-2xl flex flex-col">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+                <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface">Attendance Log History</h3>
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="flex-1 sm:flex-none bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="flex-1 sm:flex-none bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
+              </div>
               {studentRecords.length === 0 ? (
                 <div className="text-on-surface-variant text-sm py-4">No history available.</div>
+              ) : filteredRecords.length === 0 ? (
+                <div className="text-on-surface-variant text-sm py-4">No records match your filters.</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
+                <div className="overflow-x-auto overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  <table className="w-full text-left border-collapse text-xs relative">
+                    <thead className="sticky top-0 bg-surface-container-lowest/80 backdrop-blur-md z-10">
                       <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
-                        <th className="pb-3 font-semibold">Date</th>
-                        <th className="pb-3 font-semibold">Course</th>
-                        <th className="pb-3 font-semibold">Status</th>
+                        <th className="pb-3 pt-2 font-semibold">Date</th>
+                        <th className="pb-3 pt-2 font-semibold">Course</th>
+                        <th className="pb-3 pt-2 font-semibold">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/20">
-                      {studentRecords.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(record => (
+                      {filteredRecords.map(record => (
                         <tr key={record._id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="py-4 font-mono">{new Date(record.date).toLocaleDateString()}</td>
+                          <td className="py-4 font-mono">
+                            {(() => {
+                              const d = new Date(record.date);
+                              return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+                            })()}
+                          </td>
                           <td className="py-4 font-semibold">{record.course.name} <span className="font-mono text-[9px] text-on-surface-variant">({record.course.code})</span></td>
                           <td className="py-4">
                             <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono tracking-wider font-semibold ${

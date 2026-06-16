@@ -88,7 +88,7 @@ function TeacherDashboard({ dashboardData }: any) {
         </div>
       </section>
 
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 mt-4">
         {stats.map((s) => (
           <div key={s.name} className={`glass-card p-5 rounded-2xl border-l-4 ${s.border} flex justify-between items-center`}>
             <div>
@@ -124,8 +124,7 @@ function StudentDashboard({ dashboardData, rankings, userRankRecord }: any) {
 
   const stats = [
     { name: "Attendance", value: dashboardData?.metrics?.attendance ?? "92%", diff: "Optimal", border: "border-l-primary", text: "text-primary" },
-    { name: "CGPA", value: dashboardData?.metrics?.cgpa ? dashboardData.metrics.cgpa.toFixed(1) : "3.8", diff: "Academic", border: "border-l-secondary", text: "text-secondary" },
-    { name: "Assignments", value: dashboardData?.metrics?.pendingAssignments !== undefined ? String(dashboardData.metrics.pendingAssignments) : "12", diff: "Pending", border: "border-l-error", text: "text-error" },
+    { name: "Vault", value: dashboardData?.metrics?.achievements ?? "0/0", diff: "Badges", border: "border-l-secondary", text: "text-secondary" },
     { name: "Productivity", value: "High", diff: "Active", border: "border-l-tertiary", text: "text-tertiary" },
   ];
 
@@ -213,7 +212,7 @@ function StudentDashboard({ dashboardData, rankings, userRankRecord }: any) {
             </div>
           </aside>
 
-          <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             {stats.map((s) => (
               <div key={s.name} className={`glass-card p-5 rounded-2xl border-l-4 ${s.border}`}>
                 <p className="font-mono text-[10px] text-on-surface-variant mb-1 uppercase tracking-widest">
