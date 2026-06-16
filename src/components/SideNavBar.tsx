@@ -77,6 +77,12 @@ export function SideNavBar() {
       href: "/ai-command",
       label: "Academic Intel",
     },
+    {
+      name: "Admin Portal",
+      icon: "admin_panel_settings",
+      href: "/admin",
+      label: "System Mgmt",
+    },
   ];
 
   return (

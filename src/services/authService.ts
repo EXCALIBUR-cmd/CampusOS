@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
 import { Student } from "@/models/Student";
 import { Teacher } from "@/models/Teacher";
+import { Admin } from "@/models/Admin";
 
 export async function registerUser(data: {
   email: string;
@@ -57,6 +58,15 @@ export async function registerUser(data: {
       });
       await teacher.save();
       user.teacherProfile = teacher._id;
+      await user.save();
+    } else if (data.role === "admin") {
+      const admin = new Admin({
+        user: user._id,
+        name: data.name,
+        department: data.department || "Management",
+      });
+      await admin.save();
+      user.adminProfile = admin._id;
       await user.save();
     }
   } catch (error) {
