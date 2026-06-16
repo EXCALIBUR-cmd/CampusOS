@@ -69,6 +69,20 @@ export async function POST(request: Request) {
       thread = new AIConversation({ student: student._id, messages: [] });
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const queriesToday = thread.messages.filter(
+      (m: any) => m.sender === "user" && new Date(m.time) >= today
+    ).length;
+
+    if (queriesToday >= 10) {
+      return NextResponse.json(
+        { success: false, error: "Daily AI query limit reached (10/10). Please return tomorrow." },
+        { status: 429 }
+      );
+    }
+
     thread.messages.push({
       sender: "user",
       text: prompt,
