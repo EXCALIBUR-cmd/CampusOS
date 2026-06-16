@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export function CampusOSLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (
@@ -33,8 +34,20 @@ export function CampusOSLogo({ className = "w-10 h-10" }: { className?: string }
 
 export function SideNavBar() {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
 
-  const navItems = [
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setRole(data.data.role);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const allNavItems = [
     {
       name: "Dashboard",
       icon: "dashboard",
@@ -84,6 +97,12 @@ export function SideNavBar() {
       label: "System Mgmt",
     },
   ];
+
+  const navItems = allNavItems.filter(item => {
+    if (item.name === "AI Command" && role !== "student") return false;
+    if (item.name === "Admin Portal" && role !== "admin") return false;
+    return true;
+  });
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/80 backdrop-blur-xl border-r border-outline-variant flex flex-col py-8 z-50">
