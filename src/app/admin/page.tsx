@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
 
@@ -200,8 +201,13 @@ export default function AdminPortal() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-on-surface-variant font-medium">
-                        {user.email}
+                      <td className="px-6 py-4 text-sm font-medium">
+                        <Link 
+                          href={`/profile/${user._id}`} 
+                          className="text-primary hover:text-primary/80 transition-colors underline decoration-primary/30 underline-offset-4"
+                        >
+                          {user.email}
+                        </Link>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono tracking-wider font-bold uppercase ${
@@ -349,13 +355,24 @@ export default function AdminPortal() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Department</label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  />
+                  >
+                    <option value="" disabled>Select Department</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Aerospace">Aerospace</option>
+                    <option value="Chemical">Chemical</option>
+                    <option value="Hydrology">Hydrology</option>
+                    <option value="Thermodynamics">Thermodynamics</option>
+                    <option value="Biotech">Biotech</option>
+                  </select>
                 </div>
               </div>
 

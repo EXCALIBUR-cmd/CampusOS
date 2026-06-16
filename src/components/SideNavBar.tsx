@@ -136,13 +136,6 @@ export function SideNavBar() {
           className="flex items-center gap-4 text-on-surface-variant font-medium hover:text-primary transition-all text-xs"
           href="#"
         >
-          <span className="material-symbols-outlined text-[18px]">settings</span>
-          <span className="font-mono uppercase tracking-wider">Settings</span>
-        </Link>
-        <Link
-          className="flex items-center gap-4 text-on-surface-variant font-medium hover:text-primary transition-all text-xs"
-          href="#"
-        >
           <span className="material-symbols-outlined text-[18px]">contact_support</span>
           <span className="font-mono uppercase tracking-wider">Support</span>
         </Link>
