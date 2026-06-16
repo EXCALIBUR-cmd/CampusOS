@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { connectToDatabase } from "@/lib/db";
 import { SupportTicket } from "@/models/SupportTicket";
+import { Notification } from "@/models/Notification";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,6 +26,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (data.reply !== undefined) ticket.reply = data.reply;
 
     await ticket.save();
+
+    await Notification.create({
+      recipient: ticket.user,
+      title: "Support Ticket Updated",
+      message: `Your ticket regarding "${ticket.subject}" has been updated.`,
+      type: "System",
+    });
 
     return NextResponse.json({ success: true, data: ticket });
   } catch (error: any) {

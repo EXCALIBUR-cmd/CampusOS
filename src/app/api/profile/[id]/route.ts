@@ -18,8 +18,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const user = await User.findById(userId)
-      .populate("studentProfile")
-      .populate("teacherProfile")
+      .populate({
+        path: "studentProfile",
+        populate: {
+          path: "courses",
+          populate: { path: "teachers" }
+        }
+      })
+      .populate({
+        path: "teacherProfile",
+        populate: { path: "courses" }
+      })
       .populate("adminProfile")
       .select("-password")
       .lean();

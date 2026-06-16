@@ -79,6 +79,27 @@ export async function POST(request: Request) {
 
     if (operations.length > 0) {
       await Attendance.bulkWrite(operations);
+
+      // Grant XP based on attendance
+      const xpUpdates = records.map((record: any) => {
+        let xpGained = 0;
+        if (record.status === "present") xpGained = 10;
+        else if (record.status === "late") xpGained = 5;
+
+        if (xpGained > 0) {
+          return {
+            updateOne: {
+              filter: { _id: record.studentId },
+              update: { $inc: { totalXp: xpGained } }
+            }
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      if (xpUpdates.length > 0) {
+        await Student.bulkWrite(xpUpdates);
+      }
     }
 
     return NextResponse.json({ success: true, message: "Attendance saved successfully" });

@@ -233,23 +233,25 @@ export default function CoursesAdminPage() {
                       <td className="px-6 py-4 text-xs font-mono text-center">
                         {course.students.length}
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2">
-                        <button
-                          onClick={() => openModal(course)}
-                          className="p-1.5 text-on-surface-variant hover:text-primary transition-colors bg-surface-container-highest rounded-md border border-outline-variant hover:border-primary/50"
-                          title="Edit Course"
-                        >
-                          <span className="material-symbols-outlined text-[16px] block">edit</span>
-                        </button>
-                        {role === "admin" && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleDelete(course._id)}
-                            className="p-1.5 text-on-surface-variant hover:text-error transition-colors bg-surface-container-highest rounded-md border border-outline-variant hover:border-error/50"
-                            title="Delete Course"
+                            onClick={() => openModal(course)}
+                            className="p-1.5 text-on-surface-variant hover:text-primary transition-colors bg-surface-container-highest rounded-md border border-outline-variant hover:border-primary/50"
+                            title="Edit Course"
                           >
-                            <span className="material-symbols-outlined text-[16px] block">delete</span>
+                            <span className="material-symbols-outlined text-[16px] block">edit</span>
                           </button>
-                        )}
+                          {role === "admin" && (
+                            <button
+                              onClick={() => handleDelete(course._id)}
+                              className="p-1.5 text-on-surface-variant hover:text-error transition-colors bg-surface-container-highest rounded-md border border-outline-variant hover:border-error/50"
+                              title="Delete Course"
+                            >
+                              <span className="material-symbols-outlined text-[16px] block">delete</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

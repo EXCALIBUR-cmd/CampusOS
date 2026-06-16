@@ -76,7 +76,7 @@ export function SideNavBar() {
       name: "Profile",
       icon: "person",
       href: "/profile",
-      label: "Commander dossier",
+      label: "Student profile",
     },
     {
       name: "Missions",
@@ -115,7 +115,8 @@ export function SideNavBar() {
     if (item.name === "Admin Portal" && role !== "admin") return false;
     if (item.name === "Course Mgmt" && role === "student") return false;
     if (item.name === "Departments" && role !== "admin") return false;
-    if (item.name === "The Vault" && role === "admin") return false;
+    if (item.name === "The Vault" && role !== "student") return false;
+    if (item.name === "Profile" && role !== "student") return false;
     return true;
   });
 

@@ -67,7 +67,7 @@ export default function LoginPage() {
                 CAMPUSOS
               </span>
               <span className="font-mono text-xs text-on-surface-variant uppercase tracking-widest leading-none block mt-1">
-                Student Command System
+                Intelligent Campus ERP
               </span>
             </div>
           </div>
@@ -75,22 +75,14 @@ export default function LoginPage() {
             The next generation of academic management.
           </h2>
           <p className="text-on-surface-variant font-body-lg text-base leading-relaxed mb-8">
-            An engineered dashboard balancing technical efficiency with gamified feedback loops.
-            Position your campus experience as a unified command center.
+            A unified ecosystem seamlessly integrating students, faculty, and administration. Enhance your institution's operational efficiency with real-time analytics and intelligent workflows.
           </p>
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
-                SYSTEM CORRELATION
+                SYSTEM STATUS
               </span>
-              <span className="font-geist text-lg font-bold text-on-surface">Optimal</span>
-            </div>
-            <div className="h-8 w-[1px] bg-outline-variant"></div>
-            <div className="flex flex-col">
-              <span className="font-mono text-[10px] text-secondary uppercase tracking-widest">
-                ACTIVE COMMANDERS
-              </span>
-              <span className="font-geist text-lg font-bold text-on-surface">1,432 Online</span>
+              <span className="font-geist text-lg font-bold text-on-surface">Under UAT</span>
             </div>
           </div>
         </div>
@@ -110,7 +102,7 @@ export default function LoginPage() {
                 CAMPUSOS
               </span>
               <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">
-                Student Command System
+                Intelligent Campus ERP
               </p>
             </div>
           </div>
@@ -121,10 +113,10 @@ export default function LoginPage() {
 
             <div className="mb-8">
               <h3 className="font-geist text-2xl font-bold text-on-surface tracking-tight">
-                Initialize Access
+                Sign In to CampusOS
               </h3>
               <p className="text-on-surface-variant text-xs font-mono uppercase tracking-wider mt-1.5">
-                Authentication Required
+                Enter your credentials to continue
               </p>
             </div>
 
@@ -138,7 +130,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-1">
                 <label className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block">
-                  Commander ID
+                  Email
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-0 bottom-2.5 text-on-surface-variant text-[18px]">
@@ -148,7 +140,7 @@ export default function LoginPage() {
                     type="text"
                     value={commanderId}
                     onChange={(e) => setCommanderId(e.target.value)}
-                    placeholder="e.g. sterling_42"
+                    placeholder="e.g. anugrah@campus.os"
                     className="w-full bg-transparent pl-8 pr-2 py-2 border-b border-outline-variant focus:border-primary text-on-surface font-sans text-sm focus:outline-none transition-all placeholder:text-outline/50"
                     disabled={loading}
                   />
@@ -157,7 +149,7 @@ export default function LoginPage() {
 
               <div className="space-y-1">
                 <label className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest block">
-                  Access Code
+                  Password
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-0 bottom-2.5 text-on-surface-variant text-[18px]">
@@ -180,10 +172,10 @@ export default function LoginPage() {
                     type="checkbox"
                     className="rounded bg-surface-container-high border-outline-variant text-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"
                   />
-                  <span>Persist session</span>
+                  <span>Remember me</span>
                 </label>
                 <a href="#" className="text-primary hover:underline font-mono uppercase tracking-wider">
-                  Forgot credentials?
+                  Forgot password?
                 </a>
               </div>
 
@@ -195,12 +187,12 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <span className="animate-spin h-3.5 w-3.5 border-2 border-on-primary-container border-t-transparent rounded-full"></span>
-                    <span>Verifying Code...</span>
+                    <span>Authenticating...</span>
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[16px]">vpn_key</span>
-                    <span>Verify Credentials</span>
+                    <span className="material-symbols-outlined text-[16px]">login</span>
+                    <span>Secure Login</span>
                   </>
                 )}
               </button>
@@ -208,7 +200,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center text-xs text-on-surface-variant font-mono uppercase tracking-widest">
-            SECURE PORT: 443 // HOST: OS_CORE
+            CampusOS v1.5 // Enterprise Academic Network
           </div>
         </div>
       </section>

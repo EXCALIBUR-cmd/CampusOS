@@ -32,10 +32,7 @@ export default function UserProfilePage() {
     loadProfile();
   }, [userId]);
 
-  const courses = [
-    { code: "CS-401", name: "Artificial Intelligence", grade: "A", time: "Mon, Wed // 10:00 AM", instructor: "Dr. K. Vance" },
-    { code: "CS-402", name: "Database Management", grade: "A-", time: "Tue, Thu // 02:00 PM", instructor: "Prof. L. Croft" },
-  ];
+
 
   const skills = [
     { name: "Coding", value: 92 },
@@ -69,14 +66,26 @@ export default function UserProfilePage() {
     );
   }
 
-  const role = userData.role;
-  const profile = role === "student" ? userData.studentProfile : role === "teacher" ? userData.teacherProfile : userData.adminProfile;
+  if (userData.role !== "student") {
+    return (
+      <div className="min-h-screen bg-background flex">
+        <SideNavBar />
+        <main className="flex-1 ml-64 p-8 flex flex-col items-center justify-center text-center">
+          <span className="material-symbols-outlined text-6xl text-error mb-4">block</span>
+          <h2 className="font-geist text-2xl font-bold text-on-surface">Access Restricted</h2>
+          <p className="text-on-surface-variant font-mono mt-2">Dossier profiles are only available for Student personnel.</p>
+        </main>
+      </div>
+    );
+  }
+
+  const profile = userData.studentProfile;
   const name = profile?.name || "Unknown";
   const department = profile?.department || "Unassigned";
   const bio = profile?.bio || "No biography available on record.";
 
-  const titlePrefix = role === "student" ? "Commander" : role === "teacher" ? "Professor" : "Administrator";
-  const idDisplay = role === "student" && profile?.commanderId ? profile.commanderId : userData._id.toString().slice(-6).toUpperCase();
+  const titlePrefix = "Student";
+  const idDisplay = profile?.commanderId ? profile.commanderId : userData._id.toString().slice(-6).toUpperCase();
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -89,7 +98,7 @@ export default function UserProfilePage() {
 
         <div className="grid grid-cols-12 gap-6">
           {/* Left Column: Dossier Header (Span 8) */}
-          <div className={`col-span-12 ${role === "student" ? "lg:col-span-8" : "lg:col-span-12"} space-y-6`}>
+          <div className="col-span-12 lg:col-span-8 space-y-6">
             {/* Dossier Card */}
             <section className="glass-card p-8 rounded-2xl relative overflow-hidden flex flex-col sm:flex-row gap-6 items-center sm:items-start">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
@@ -97,16 +106,9 @@ export default function UserProfilePage() {
               {/* Avatar Frame */}
               <div className="w-24 h-24 rounded-full border-2 border-primary bg-primary/10 flex items-center justify-center font-bold text-[36px] text-primary relative shrink-0 neon-glow">
                 {name[0] || "?"}
-                {role === "student" && (
-                  <span className="absolute bottom-0 right-0 bg-secondary px-1.5 py-0.5 rounded text-[8px] font-mono text-white font-bold uppercase tracking-wider leading-none">
-                    LVL {profile?.level ?? 1}
-                  </span>
-                )}
-                {role !== "student" && (
-                  <span className="absolute bottom-0 right-0 bg-tertiary px-1.5 py-0.5 rounded text-[8px] font-mono text-white font-bold uppercase tracking-wider leading-none">
-                    {role}
-                  </span>
-                )}
+                <span className="absolute bottom-0 right-0 bg-secondary px-1.5 py-0.5 rounded text-[8px] font-mono text-white font-bold uppercase tracking-wider leading-none">
+                  LVL {profile?.level ?? 1}
+                </span>
               </div>
 
               {/* Profile Details */}
@@ -121,9 +123,8 @@ export default function UserProfilePage() {
                     </span>
                   </div>
                   <p className="text-on-surface-variant font-mono text-[11px] uppercase tracking-widest mt-1">
-                    {role === "teacher" && profile?.designation ? `${profile.designation} // ` : ""}
                     Faculty of {department}
-                    {role === "student" && profile?.semester ? ` // Semester ${profile.semester}` : ""}
+                    {profile?.semester ? ` // Semester ${profile.semester}` : ""}
                   </p>
                 </div>
                 <p className="text-on-surface-variant text-sm max-w-xl leading-relaxed">
@@ -138,16 +139,15 @@ export default function UserProfilePage() {
               </div>
             </section>
 
-            {/* Content varies by role */}
-            {role === "student" && (
-              <section className="glass-card p-6 rounded-2xl">
+            {/* Enrolled Courses */}
+            <section className="glass-card p-6 rounded-2xl">
                 <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">
                   Active Enrolled Courses
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {courses.map((course) => (
+                  {profile?.courses?.length > 0 ? profile.courses.map((course: any) => (
                     <div
-                      key={course.code}
+                      key={course._id}
                       className="p-4 rounded-xl bg-white/[0.02] border border-outline-variant/30 hover:border-primary/30 transition-all flex justify-between items-start"
                     >
                       <div className="space-y-2">
@@ -160,37 +160,28 @@ export default function UserProfilePage() {
                           </h4>
                         </div>
                         <div className="font-mono text-[10px] text-on-surface-variant space-y-0.5">
-                          <p>{course.time}</p>
-                          <p>{course.instructor}</p>
+                          <p>Credits: {course.credits}</p>
+                          <p>Instructor: {course.teachers?.[0]?.name || "TBA"}</p>
                         </div>
                       </div>
-                      <span className="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center font-mono font-bold text-sm text-primary">
-                        {course.grade}
+                      <span className="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center font-mono font-bold text-sm text-primary" title="Grade pending">
+                        -
                       </span>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="col-span-2 p-8 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50">
+                      <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">school</span>
+                      <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
+                        Not enrolled in any courses yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
-            )}
-
-            {role === "teacher" && (
-              <section className="glass-card p-6 rounded-2xl">
-                <h3 className="font-geist text-sm font-bold uppercase tracking-wider text-on-surface mb-6">
-                  Assigned Teaching Modules
-                </h3>
-                <div className="p-8 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50">
-                  <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">assignment_ind</span>
-                  <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">
-                    No modules currently assigned to this professor.
-                  </p>
-                </div>
-              </section>
-            )}
           </div>
 
-          {/* Right Column: Skill Radar Graphic & Quick Statistics (Span 4) - STUDENT ONLY */}
-          {role === "student" && (
-            <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Right Column: Skill Radar Graphic & Quick Statistics (Span 4) */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
               {/* Quick Stats Grid */}
               <section className="grid grid-cols-2 gap-4">
                 <div className="glass-card p-4 rounded-2xl text-center">
@@ -263,7 +254,6 @@ export default function UserProfilePage() {
                 </div>
               </section>
             </div>
-          )}
         </div>
       </main>
     </div>

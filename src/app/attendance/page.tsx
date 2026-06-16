@@ -278,7 +278,7 @@ export default function AttendancePage() {
                     <thead>
                       <tr className="border-b border-outline-variant/30 text-on-surface-variant font-mono uppercase tracking-widest text-[9px]">
                         <th className="pb-3 font-semibold px-4">Student Name</th>
-                        <th className="pb-3 font-semibold px-4">Commander ID</th>
+                        <th className="pb-3 font-semibold px-4">Student ID</th>
                         <th className="pb-3 font-semibold px-4">Status</th>
                       </tr>
                     </thead>

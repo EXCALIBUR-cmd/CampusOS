@@ -127,6 +127,53 @@ export async function GET() {
     // CE Attendance
     await markAttendance("karan@campus.os", "CE-102", "vikram@campus.os", startOfDay, "late");
 
+    // Seed 90 days of historical attendance for all enrolled students
+    // First, reset all student XP to 0 so we can correctly accumulate from history
+    await Student.updateMany({}, { $set: { totalXp: 0 } });
+
+    const statuses = ["present", "present", "present", "present", "present", "present", "present", "present", "late", "absent"];
+    for (let i = 1; i <= 90; i++) {
+      const pastDate = new Date(startOfDay);
+      pastDate.setDate(pastDate.getDate() - i);
+      
+      // Skip weekends
+      const dayOfWeek = pastDate.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+      for (const c of courseData) {
+        const courseDoc = courseDocs[c.code];
+        if (!courseDoc || !c.teachers.length || !c.students.length) continue;
+        
+        let teacherUserId;
+        for (const [email, tDoc] of Object.entries(teacherDocs)) {
+          if ((tDoc as any)?._id?.toString() === c.teachers[0]?.toString()) {
+            const user = await User.findOne({ email });
+            teacherUserId = user?._id;
+            break;
+          }
+        }
+        
+        if (!teacherUserId) continue;
+
+        for (const sId of c.students) {
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          let xpGained = 0;
+          if (status === "present") xpGained = 10;
+          else if (status === "late") xpGained = 5;
+
+          await Attendance.findOneAndUpdate(
+            { student: sId, course: courseDoc._id, date: pastDate },
+            { status: status, markedBy: teacherUserId },
+            { upsert: true }
+          );
+
+          if (xpGained > 0) {
+            await Student.findByIdAndUpdate(sId, { $inc: { totalXp: xpGained } });
+          }
+        }
+      }
+    }
+
     // 6. Seed Support Tickets
     const createTicket = async (email: string, subject: string, message: string, status: "open" | "resolved", reply?: string) => {
       const user = await User.findOne({ email });
