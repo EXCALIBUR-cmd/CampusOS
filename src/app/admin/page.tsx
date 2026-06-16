@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { SideNavBar } from "@/components/SideNavBar";
 import { Header } from "@/components/Header";
 
@@ -8,6 +8,13 @@ export default function AdminPortal() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  
+  // Search, Filter, Pagination state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -34,6 +41,11 @@ export default function AdminPortal() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Reset pagination when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
@@ -73,46 +85,104 @@ export default function AdminPortal() {
     return "N/A";
   };
 
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesRole = roleFilter === "all" || u.role === roleFilter;
+      if (!matchesRole) return false;
+
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      const name = getProfileName(u).toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const profile = u.role === "student" ? u.studentProfile : u.role === "teacher" ? u.teacherProfile : u.adminProfile;
+      const id = u.role === "student" && profile?.commanderId ? profile.commanderId.toLowerCase() : u._id.toString().toLowerCase();
+
+      return name.includes(term) || email.includes(term) || id.includes(term);
+    });
+  }, [users, searchTerm, roleFilter]);
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const SkeletonRow = () => (
+    <tr className="animate-pulse border-b border-outline-variant/50">
+      <td className="px-6 py-4"><div className="h-4 bg-surface-container-highest rounded w-20"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-surface-container-highest rounded w-48"></div></td>
+      <td className="px-6 py-4"><div className="h-6 bg-surface-container-highest rounded-full w-16"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-surface-container-highest rounded w-24"></div></td>
+      <td className="px-6 py-4">
+        <div className="flex gap-2">
+          <div className="h-5 bg-surface-container-highest rounded w-12"></div>
+          <div className="h-5 bg-surface-container-highest rounded w-16"></div>
+        </div>
+      </td>
+      <td className="px-6 py-4"><div className="h-4 bg-surface-container-highest rounded w-16"></div></td>
+      <td className="px-6 py-4 text-right"><div className="h-8 bg-surface-container-highest rounded w-8 ml-auto"></div></td>
+    </tr>
+  );
+
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Side Navigation */}
       <SideNavBar />
 
-      {/* Main Content Canvas */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
         <Header title="Admin Portal" subtitle="System User Management" />
 
-        <div className="flex justify-end mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex flex-1 w-full gap-4">
+            {/* Search Input */}
+            <div className="relative max-w-sm w-full">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+              <input 
+                type="text" 
+                placeholder="Search by ID, name, or email..." 
+                className="w-full bg-surface-container-highest border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Role Filter */}
+            <select 
+              className="bg-surface-container-highest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none pr-10 relative min-w-[120px]"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <button
             onClick={() => setShowModal(true)}
-            className="bg-primary hover:bg-primary/80 transition-colors px-6 py-3 rounded-xl font-bold font-geist text-on-primary shadow-lg shadow-primary/30 text-sm flex items-center gap-2"
+            className="bg-primary hover:bg-primary/80 transition-colors px-6 py-2.5 rounded-xl font-bold font-geist text-on-primary shadow-lg shadow-primary/30 text-sm flex items-center gap-2 shrink-0"
           >
             <span className="material-symbols-outlined text-[20px]">person_add</span>
             Create User
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <div className="glass-card rounded-2xl overflow-hidden border border-outline-variant">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-surface-container-highest/50 text-on-surface-variant font-mono text-[10px] uppercase tracking-widest border-b border-outline-variant">
-                    <th className="px-6 py-4">ID</th>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Role</th>
-                    <th className="px-6 py-4">Department</th>
-                    <th className="px-6 py-4">Details</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant/50">
-                  {users.map((user) => {
+        <div className="glass-card rounded-2xl overflow-hidden border border-outline-variant flex flex-col h-[calc(100vh-220px)]">
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 bg-surface-container-highest z-10 shadow-sm">
+                <tr className="text-on-surface-variant font-mono text-[10px] uppercase tracking-widest border-b border-outline-variant">
+                  <th className="px-6 py-4">ID / Name</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4">Department</th>
+                  <th className="px-6 py-4">Details</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/50">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                ) : paginatedUsers.length > 0 ? (
+                  paginatedUsers.map((user) => {
                     const profile = user.role === "student" ? user.studentProfile : user.role === "teacher" ? user.teacherProfile : user.adminProfile;
                     const name = profile?.name || "N/A";
                     const dept = profile?.department || "N/A";
@@ -121,12 +191,13 @@ export default function AdminPortal() {
                     return (
                     <tr key={user._id} className="hover:bg-white/5 transition-colors group">
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">
-                              {id}
-                            </span>
-                          </div>
+                        <div className="flex flex-col">
+                          <span className="font-geist font-bold text-on-surface text-sm">
+                            {name}
+                          </span>
+                          <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">
+                            ID: {id}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-variant font-medium">
@@ -177,22 +248,46 @@ export default function AdminPortal() {
                       </td>
                     </tr>
                     );
-                  })}
-                  {users.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center">
-                        <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">inbox</span>
-                        <p className="text-sm font-mono text-on-surface-variant uppercase tracking-wider">
-                          No users found in the system
-                        </p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center">
+                      <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">search_off</span>
+                      <p className="text-sm font-mono text-on-surface-variant uppercase tracking-wider">
+                        No users match your criteria
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+          
+          {/* Pagination Controls */}
+          {!loading && filteredUsers.length > 0 && (
+            <div className="border-t border-outline-variant p-4 bg-surface-container-lowest flex justify-between items-center">
+              <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length}
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-geist font-bold text-on-surface"
+                >
+                  Prev
+                </button>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-geist font-bold text-on-surface"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Create Modal */}
