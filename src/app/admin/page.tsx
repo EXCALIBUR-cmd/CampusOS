@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 
 export default function AdminPortal() {
   const [users, setUsers] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -42,6 +43,12 @@ export default function AdminPortal() {
 
   useEffect(() => {
     fetchUsers();
+    fetch("/api/departments")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setDepartments(data.data);
+      })
+      .catch(console.error);
   }, []);
 
   // Reset pagination when search or filter changes
@@ -348,24 +355,23 @@ export default function AdminPortal() {
                 <input
                   type="email"
                   required
-                  disabled={!!editingUserId}
-                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
-              {!editingUserId && (
-                <div>
-                  <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">
+                  Password {editingUserId && "(Leave blank to keep current)"}
+                </label>
+                <input
+                  type="password"
+                  required={!editingUserId}
+                  className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
               <div>
                 <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Name</label>
                 <input
@@ -377,40 +383,36 @@ export default function AdminPortal() {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className={formData.role === "admin" ? "col-span-2" : ""}>
                   <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Role</label>
                   <select
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none disabled:opacity-50"
+                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    disabled={!!editingUserId}
                   >
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Department</label>
-                  <select
-                    required
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  >
-                    <option value="" disabled>Select Department</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Mechanical">Mechanical</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Civil">Civil</option>
-                    <option value="Aerospace">Aerospace</option>
-                    <option value="Chemical">Chemical</option>
-                    <option value="Hydrology">Hydrology</option>
-                    <option value="Thermodynamics">Thermodynamics</option>
-                    <option value="Biotech">Biotech</option>
-                  </select>
-                </div>
+                {formData.role !== "admin" && (
+                  <div>
+                    <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Department</label>
+                    <select
+                      required
+                      className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    >
+                      <option value="" disabled>Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept._id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {formData.role === "student" && (
@@ -418,6 +420,7 @@ export default function AdminPortal() {
                   <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Semester</label>
                   <input
                     type="number"
+                    required
                     min="1"
                     max="8"
                     className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
@@ -430,12 +433,18 @@ export default function AdminPortal() {
               {formData.role === "teacher" && (
                 <div>
                   <label className="block text-[10px] font-mono text-on-surface-variant uppercase tracking-widest mb-1">Designation</label>
-                  <input
-                    type="text"
-                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors"
+                  <select
+                    required
+                    className="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary transition-colors appearance-none"
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                  />
+                  >
+                    <option value="" disabled>Select Designation</option>
+                    <option value="Professor">Professor</option>
+                    <option value="Associate Professor">Associate Professor</option>
+                    <option value="Assistant Professor">Assistant Professor</option>
+                    <option value="Guest Faculty">Guest Faculty</option>
+                  </select>
                 </div>
               )}
 

@@ -14,81 +14,83 @@ export async function GET() {
     await connectToDatabase();
 
     // 1. Seed Departments
-    const deptCS = await Department.findOneAndUpdate(
-      { code: "CSE" },
-      { name: "Computer Science and Engineering", code: "CSE", headOfDepartment: "Dr. Alan Turing", description: "Computing, AI, and Software Engineering." },
-      { upsert: true, new: true }
-    );
-    const deptME = await Department.findOneAndUpdate(
-      { code: "ME" },
-      { name: "Mechanical Engineering", code: "ME", headOfDepartment: "Dr. James Watt", description: "Thermodynamics, Robotics, and Mechanics." },
-      { upsert: true, new: true }
-    );
+    const depts = [
+      { name: "Computer Science and Engineering", code: "CSE", headOfDepartment: "Dr. Maninder Singh", description: "Computing, AI, and Software Engineering." },
+      { name: "Mechanical Engineering", code: "ME", headOfDepartment: "Dr. Rajesh Kumar", description: "Thermodynamics, Robotics, and Mechanics." },
+      { name: "Electrical Engineering", code: "EE", headOfDepartment: "Dr. Anita Desai", description: "Power systems, circuits, and electronics." },
+      { name: "Civil Engineering", code: "CE", headOfDepartment: "Dr. Vikram Malhotra", description: "Infrastructure, materials, and construction." }
+    ];
+
+    for (const d of depts) {
+      await Department.findOneAndUpdate({ code: d.code }, d, { upsert: true, new: true });
+    }
+
+    // Helper to get or create user
+    const getOrCreateUser = async (userData: any) => {
+      let user = await User.findOne({ email: userData.email });
+      if (!user) {
+        await registerUser(userData);
+        user = await User.findOne({ email: userData.email });
+      }
+      return user;
+    };
 
     // 2. Seed Teachers
-    // Create users first using registerUser
-    let teacherCSUser = await User.findOne({ email: "turing@campus.os" });
-    if (!teacherCSUser) {
-      await registerUser({ email: "turing@campus.os", password: "password123", role: "teacher", name: "Dr. Alan Turing", department: "Computer Science and Engineering", designation: "Professor", commanderId: "" });
-      teacherCSUser = await User.findOne({ email: "turing@campus.os" });
-    }
-    const teacherCS = await Teacher.findOne({ user: teacherCSUser?._id });
+    const teacherData = [
+      { email: "maninder@campus.os", password: "password123", role: "teacher", name: "Dr. Maninder Singh", department: "Computer Science and Engineering", designation: "Professor", commanderId: "" },
+      { email: "rajesh@campus.os", password: "password123", role: "teacher", name: "Dr. Rajesh Kumar", department: "Mechanical Engineering", designation: "Associate Professor", commanderId: "" },
+      { email: "anita@campus.os", password: "password123", role: "teacher", name: "Dr. Anita Desai", department: "Electrical Engineering", designation: "Professor", commanderId: "" },
+      { email: "vikram@campus.os", password: "password123", role: "teacher", name: "Dr. Vikram Malhotra", department: "Civil Engineering", designation: "Assistant Professor", commanderId: "" }
+    ];
 
-    let teacherMEUser = await User.findOne({ email: "watt@campus.os" });
-    if (!teacherMEUser) {
-      await registerUser({ email: "watt@campus.os", password: "password123", role: "teacher", name: "Dr. James Watt", department: "Mechanical Engineering", designation: "Associate Professor", commanderId: "" });
-      teacherMEUser = await User.findOne({ email: "watt@campus.os" });
+    const teacherDocs: any = {};
+    for (const t of teacherData) {
+      const u = await getOrCreateUser(t);
+      teacherDocs[t.email] = await Teacher.findOne({ user: u._id });
     }
-    const teacherME = await Teacher.findOne({ user: teacherMEUser?._id });
 
     // 3. Seed Students
-    let studentCSUser = await User.findOne({ email: "alice@campus.os" });
-    if (!studentCSUser) {
-      await registerUser({ email: "alice@campus.os", password: "password123", role: "student", name: "Alice Hacker", department: "Computer Science and Engineering", semester: 3, commanderId: "ALICE_01", designation: "" });
-      studentCSUser = await User.findOne({ email: "alice@campus.os" });
-    }
-    const studentCS = await Student.findOne({ user: studentCSUser?._id });
+    const studentData = [
+      { email: "anugrah@campus.os", password: "password123", role: "student", name: "Anugrah Singh", department: "Computer Science and Engineering", semester: 6, commanderId: "CS_001", designation: "" },
+      { email: "riya@campus.os", password: "password123", role: "student", name: "Riya Sharma", department: "Computer Science and Engineering", semester: 6, commanderId: "CS_002", designation: "" },
+      { email: "rahul@campus.os", password: "password123", role: "student", name: "Rahul Verma", department: "Mechanical Engineering", semester: 4, commanderId: "ME_001", designation: "" },
+      { email: "sneha@campus.os", password: "password123", role: "student", name: "Sneha Patel", department: "Electrical Engineering", semester: 8, commanderId: "EE_001", designation: "" },
+      { email: "karan@campus.os", password: "password123", role: "student", name: "Karan Kapoor", department: "Civil Engineering", semester: 2, commanderId: "CE_001", designation: "" }
+    ];
 
-    let studentMEUser = await User.findOne({ email: "bob@campus.os" });
-    if (!studentMEUser) {
-      await registerUser({ email: "bob@campus.os", password: "password123", role: "student", name: "Bob Builder", department: "Mechanical Engineering", semester: 5, commanderId: "BOB_02", designation: "" });
-      studentMEUser = await User.findOne({ email: "bob@campus.os" });
+    const studentDocs: any = {};
+    for (const s of studentData) {
+      const u = await getOrCreateUser(s);
+      studentDocs[s.email] = await Student.findOne({ user: u._id });
     }
-    const studentME = await Student.findOne({ user: studentMEUser?._id });
 
     // 4. Seed Courses
-    const courseDSA = await Course.findOneAndUpdate(
-      { code: "CS-201" },
-      { 
-        name: "Data Structures & Algorithms", 
-        code: "CS-201", 
-        department: "Computer Science and Engineering", 
-        credits: 4, 
-        teachers: teacherCS ? [teacherCS._id] : [],
-        students: studentCS ? [studentCS._id] : []
-      },
-      { upsert: true, new: true }
-    );
-    
-    const courseThermo = await Course.findOneAndUpdate(
-      { code: "ME-301" },
-      { 
-        name: "Thermodynamics", 
-        code: "ME-301", 
-        department: "Mechanical Engineering", 
-        credits: 3, 
-        teachers: teacherME ? [teacherME._id] : [],
-        students: studentME ? [studentME._id] : []
-      },
-      { upsert: true, new: true }
-    );
+    const courseData = [
+      { code: "CS-301", name: "Data Structures & Algorithms", department: "Computer Science and Engineering", credits: 4, teachers: [teacherDocs["maninder@campus.os"]?._id], students: [studentDocs["anugrah@campus.os"]?._id, studentDocs["riya@campus.os"]?._id] },
+      { code: "CS-405", name: "Artificial Intelligence", department: "Computer Science and Engineering", credits: 3, teachers: [teacherDocs["maninder@campus.os"]?._id], students: [studentDocs["anugrah@campus.os"]?._id] },
+      { code: "ME-201", name: "Thermodynamics & Heat Transfer", department: "Mechanical Engineering", credits: 4, teachers: [teacherDocs["rajesh@campus.os"]?._id], students: [studentDocs["rahul@campus.os"]?._id] },
+      { code: "EE-305", name: "Advanced Circuit Analysis", department: "Electrical Engineering", credits: 3, teachers: [teacherDocs["anita@campus.os"]?._id], students: [studentDocs["sneha@campus.os"]?._id] },
+      { code: "CE-102", name: "Structural Mechanics", department: "Civil Engineering", credits: 3, teachers: [teacherDocs["vikram@campus.os"]?._id], students: [studentDocs["karan@campus.os"]?._id] },
+    ];
 
-    // Sync courses back to Teachers and Students
-    if (teacherCS) await Teacher.findByIdAndUpdate(teacherCS._id, { $addToSet: { courses: courseDSA._id } });
-    if (studentCS) await Student.findByIdAndUpdate(studentCS._id, { $addToSet: { courses: courseDSA._id } });
-    
-    if (teacherME) await Teacher.findByIdAndUpdate(teacherME._id, { $addToSet: { courses: courseThermo._id } });
-    if (studentME) await Student.findByIdAndUpdate(studentME._id, { $addToSet: { courses: courseThermo._id } });
+    const courseDocs: any = {};
+    for (const c of courseData) {
+      const doc = await Course.findOneAndUpdate(
+        { code: c.code },
+        { name: c.name, code: c.code, department: c.department, credits: c.credits, teachers: c.teachers.filter(Boolean), students: c.students.filter(Boolean) },
+        { upsert: true, new: true }
+      );
+      courseDocs[c.code] = doc;
+
+      // Sync back to teachers
+      for (const tId of doc.teachers) {
+        await Teacher.findByIdAndUpdate(tId, { $addToSet: { courses: doc._id } });
+      }
+      // Sync back to students
+      for (const sId of doc.students) {
+        await Student.findByIdAndUpdate(sId, { $addToSet: { courses: doc._id } });
+      }
+    }
 
     // 5. Seed Attendance
     const today = new Date();
@@ -96,45 +98,52 @@ export async function GET() {
     const yesterday = new Date(startOfDay);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (studentCS && teacherCSUser) {
-      await Attendance.findOneAndUpdate(
-        { student: studentCS._id, course: courseDSA._id, date: startOfDay },
-        { status: "present", markedBy: teacherCSUser._id },
-        { upsert: true }
-      );
-      await Attendance.findOneAndUpdate(
-        { student: studentCS._id, course: courseDSA._id, date: yesterday },
-        { status: "late", markedBy: teacherCSUser._id },
-        { upsert: true }
-      );
-    }
+    const markAttendance = async (studentEmail: string, courseCode: string, teacherEmail: string, date: Date, status: string) => {
+      const student = studentDocs[studentEmail];
+      const course = courseDocs[courseCode];
+      const teacherUser = await User.findOne({ email: teacherEmail });
+      
+      if (student && course && teacherUser) {
+        await Attendance.findOneAndUpdate(
+          { student: student._id, course: course._id, date: date },
+          { status: status, markedBy: teacherUser._id },
+          { upsert: true }
+        );
+      }
+    };
 
-    if (studentME && teacherMEUser) {
-      await Attendance.findOneAndUpdate(
-        { student: studentME._id, course: courseThermo._id, date: startOfDay },
-        { status: "absent", markedBy: teacherMEUser._id },
-        { upsert: true }
-      );
-    }
+    // CS Attendance
+    await markAttendance("anugrah@campus.os", "CS-301", "maninder@campus.os", startOfDay, "present");
+    await markAttendance("riya@campus.os", "CS-301", "maninder@campus.os", startOfDay, "present");
+    await markAttendance("anugrah@campus.os", "CS-301", "maninder@campus.os", yesterday, "late");
+    
+    // ME Attendance
+    await markAttendance("rahul@campus.os", "ME-201", "rajesh@campus.os", startOfDay, "absent");
+    
+    // EE Attendance
+    await markAttendance("sneha@campus.os", "EE-305", "anita@campus.os", startOfDay, "present");
+    await markAttendance("sneha@campus.os", "EE-305", "anita@campus.os", yesterday, "present");
+
+    // CE Attendance
+    await markAttendance("karan@campus.os", "CE-102", "vikram@campus.os", startOfDay, "late");
 
     // 6. Seed Support Tickets
-    if (studentCSUser) {
-      await SupportTicket.findOneAndUpdate(
-        { subject: "Lab Computers Outdated" },
-        { user: studentCSUser._id, message: "The computers in CS Lab 3 are running very slowly and crashing during compilation.", status: "open" },
-        { upsert: true }
-      );
-    }
+    const createTicket = async (email: string, subject: string, message: string, status: "open" | "resolved", reply?: string) => {
+      const user = await User.findOne({ email });
+      if (user) {
+        await SupportTicket.findOneAndUpdate(
+          { subject: subject },
+          { user: user._id, message: message, status: status, reply: reply || "" },
+          { upsert: true }
+        );
+      }
+    };
 
-    if (teacherMEUser) {
-      await SupportTicket.findOneAndUpdate(
-        { subject: "Projector Broken in Room 204" },
-        { user: teacherMEUser._id, message: "The projector in ME Lecture Hall 204 has a blown bulb.", status: "resolved", reply: "Maintenance team has replaced the bulb this morning." },
-        { upsert: true }
-      );
-    }
+    await createTicket("anugrah@campus.os", "Wi-Fi Issue in CS Dept", "The eduroam network in the CS wing is constantly dropping connections during labs.", "open");
+    await createTicket("riya@campus.os", "ID Card Replacement", "I lost my ID card yesterday, how can I request a new one?", "resolved", "Please visit the admin block between 10 AM - 2 PM with Rs. 500 fee receipt.");
+    await createTicket("rajesh@campus.os", "Lab Equipment Maintenance", "The CNC machine in ME Lab 2 needs calibration urgently before next week's practicals.", "open");
 
-    return NextResponse.json({ success: true, message: "Engineering ERP Seed Data Generated Successfully!" });
+    return NextResponse.json({ success: true, message: "Comprehensive Indian Engineering ERP Seed Data Generated Successfully!" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
